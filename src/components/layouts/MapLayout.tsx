@@ -1,19 +1,16 @@
 import { css } from 'styled-system/css'
 import type { ReactNode } from 'react'
 
-import { AppHeader } from './AppHeader'
-
 interface MapLayoutProps {
   readonly children: ReactNode
 }
 
+// 地図を画面いっぱいに表示するため，ヘッダーを置かない
 export function MapLayout({ children }: MapLayoutProps) {
   return (
-    <div className={css({ display: 'flex', flexDirection: 'column', h: '100dvh' })}>
-      <AppHeader />
-      <main className={css({ position: 'relative', flex: '1', minH: '0' })}>
-        {children}
-      </main>
-    </div>
+    <main className={css({ position: 'relative', h: '100dvh', overflow: 'hidden' })}>
+      <h1 className={css({ srOnly: true })}>Field Note</h1>
+      {children}
+    </main>
   )
 }
