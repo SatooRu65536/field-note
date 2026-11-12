@@ -37,7 +37,8 @@ export function CategoryFilter({
       aria-label="カテゴリで絞り込む"
       className={css({
         position: 'absolute',
-        top: '4',
+        // 検索欄と検索結果の件数の下に並べる
+        top: '24',
         left: '4',
         right: '20',
         zIndex: 1,

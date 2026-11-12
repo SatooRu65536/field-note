@@ -3,7 +3,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
 import { createDatabase } from '@/server/lib/db/client'
-import { findRecord, listRecordsInBounds } from '@/server/records/recordRepository'
+import {
+  findRecord,
+  listRecordsInBounds,
+  searchRecords,
+} from '@/server/records/recordRepository'
 import type { Bounds, RecordDetail, RecordSummary } from '@/server/records/types'
 
 import { QUERY_KEYS } from './queryKeys'
@@ -32,6 +36,25 @@ const getPublicRecordsInBounds = createServerFn({ method: 'GET' })
     listRecordsInBounds({
       db: createDatabase(),
       bounds: data.bounds,
+      categoryIds: data.categoryIds,
+      includePrivate: false,
+    }),
+  )
+
+// 検索語の上限文字数
+export const MAX_SEARCH_QUERY_LENGTH = 100
+
+const searchPublicRecords = createServerFn({ method: 'GET' })
+  .validator(
+    z.object({
+      query: z.string().max(MAX_SEARCH_QUERY_LENGTH),
+      categoryIds: z.array(z.string()).max(50),
+    }),
+  )
+  .handler(async ({ data }) =>
+    searchRecords({
+      db: createDatabase(),
+      query: data.query,
       categoryIds: data.categoryIds,
       includePrivate: false,
     }),
@@ -76,5 +99,24 @@ export function publicRecordQueryOptions(recordId: string) {
   return queryOptions({
     queryKey: [...QUERY_KEYS.publicRecords, 'detail', recordId],
     queryFn: () => getPublicRecord({ data: { recordId } }),
+  })
+}
+
+/**
+ * 名前またはタグに検索語を含む公開記録を取得するクエリの設定を作成する
+ * @param query 検索語．ひらがな・カタカナの違いは無視する
+ * @param categoryIds 絞り込むカテゴリ．空の場合は全カテゴリ
+ * @returns クエリの設定
+ */
+export function publicRecordSearchQueryOptions({
+  query,
+  categoryIds,
+}: {
+  query: string
+  categoryIds: readonly string[]
+}) {
+  return queryOptions({
+    queryKey: [...QUERY_KEYS.publicRecords, 'search', query, categoryIds],
+    queryFn: () => searchPublicRecords({ data: { query, categoryIds: [...categoryIds] } }),
   })
 }

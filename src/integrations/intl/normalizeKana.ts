@@ -18,3 +18,14 @@ export function normalizeKana(text: string): string {
       )
   )
 }
+
+/**
+ * normalizeKana で揃えた文字列のひらがなをカタカナにする
+ * @param text normalizeKana で揃えた文字列
+ * @returns ひらがなをカタカナにした文字列
+ */
+export function toKatakana(text: string): string {
+  return text.replace(/[ぁ-ゖ]/g, (character) =>
+    String.fromCharCode(character.charCodeAt(0) + KATAKANA_TO_HIRAGANA_OFFSET),
+  )
+}

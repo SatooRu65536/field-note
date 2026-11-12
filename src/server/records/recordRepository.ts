@@ -1,9 +1,11 @@
-import { and, asc, between, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, between, count, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm'
 
+import { normalizeKana, toKatakana } from '@/integrations/intl/normalizeKana'
 import type { Database } from '@/server/lib/db/client'
 import { recordPhotos, records, recordTags } from '@/server/lib/db/schema'
 import { findNameMemo } from '@/server/names/nameMemoRepository'
 
+import { createContainsPattern } from './likePattern'
 import { mergeNameCandidates } from './nameCandidates'
 import type { NameCandidate } from './nameCandidates'
 import type { Bounds, RecordDetail, RecordSummary } from './types'
@@ -65,6 +67,56 @@ export async function listRecordsInBounds({
     .where(and(...conditions))
     .orderBy(desc(records.discoveredAt))
     .limit(MAX_RECORDS_IN_BOUNDS)
+}
+
+// 検索結果として一度に返す記録の上限
+const MAX_SEARCH_RESULTS = 200
+
+/**
+ * 名前またはタグに検索語を含む記録を，ひらがな・カタカナの違いを無視して発見日時の新しい順に取得する
+ * @param db Drizzle のクライアント
+ * @param query 検索語
+ * @param categoryIds 絞り込むカテゴリ．空の場合は全カテゴリ
+ * @param includePrivate 非公開の記録を含める場合は true
+ * @returns 記録の一覧．検索語が空の場合は空
+ */
+export async function searchRecords({
+  db,
+  query,
+  categoryIds,
+  includePrivate,
+}: {
+  db: Database
+  query: string
+  categoryIds: readonly string[]
+  includePrivate: boolean
+}): Promise<readonly RecordSummary[]> {
+  const hiragana = normalizeKana(query)
+  if (hiragana === '') return []
+  // SQLite ではひらがなとカタカナを同一視できないため，両方の表記で検索する
+  const patterns = [...new Set([hiragana, toKatakana(hiragana)])].map(createContainsPattern)
+  const matchesName = patterns.map((pattern) => sql`"records"."name" like ${pattern} escape '\\'`)
+  const matchesTag = patterns.map(
+    (pattern) => sql`"record_tags"."tag" like ${pattern} escape '\\'`,
+  )
+  // サブクエリ内で records と record_tags の列を区別するため，テーブル名付きで書く
+  const hasMatchingTag = sql`exists (
+    select 1 from "record_tags"
+    where "record_tags"."record_id" = "records"."id" and (${sql.join(matchesTag, sql` or `)})
+  )`
+
+  const conditions = [
+    or(...matchesName, hasMatchingTag),
+    categoryIds.length > 0 ? inArray(records.categoryId, [...categoryIds]) : undefined,
+    includePrivate ? undefined : eq(records.isPublic, true),
+  ]
+
+  return db
+    .select(SUMMARY_COLUMNS)
+    .from(records)
+    .where(and(...conditions))
+    .orderBy(desc(records.discoveredAt))
+    .limit(MAX_SEARCH_RESULTS)
 }
 
 /**

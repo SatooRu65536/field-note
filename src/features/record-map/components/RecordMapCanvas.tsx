@@ -28,6 +28,8 @@ import { RecordPin } from './RecordPin'
 interface RecordMapCanvasProps {
   readonly categories: readonly Category[]
   readonly categoryIds: readonly string[]
+  // 検索中の結果．検索していない場合は null とし，表示範囲内の記録を表示する
+  readonly searchResults: readonly RecordSummary[] | null
   readonly selectedRecordId: string | null
   readonly currentPosition: Coordinates | null
   readonly onRecordSelected: (record: RecordSummary | null) => void
@@ -39,6 +41,7 @@ interface RecordMapCanvasProps {
 export function RecordMapCanvas({
   categories,
   categoryIds,
+  searchResults,
   selectedRecordId,
   currentPosition,
   onRecordSelected,
@@ -48,7 +51,8 @@ export function RecordMapCanvas({
   const { [RECORD_MAP_ID]: map } = useMap()
   const { data: mapStyle } = useSuspenseQuery(mapStyleQueryOptions())
   const bounds = useMapBounds()
-  const records = usePublicRecordsInBounds({ bounds, categoryIds })
+  const recordsInBounds = usePublicRecordsInBounds({ bounds, categoryIds })
+  const records = searchResults ?? recordsInBounds
   const hasMovedToCurrentPosition = useRef(false)
   const colorByCategoryId = new globalThis.Map(
     categories.map((category) => [category.id, category.color]),
