@@ -16,6 +16,7 @@ interface AdminRecordRowProps {
   readonly record: RecordSummary
   readonly category: Category | undefined
   readonly isDeleting: boolean
+  readonly isDeleteDisabled: boolean
   readonly onDeleteRequested: (record: RecordSummary) => void
 }
 
@@ -23,6 +24,7 @@ export function AdminRecordRow({
   record,
   category,
   isDeleting,
+  isDeleteDisabled,
   onDeleteRequested,
 }: AdminRecordRowProps) {
   return (
@@ -92,7 +94,7 @@ export function AdminRecordRow({
         <Button
           variant="danger"
           size="sm"
-          disabled={isDeleting}
+          disabled={isDeleteDisabled}
           onClick={() => onDeleteRequested(record)}
         >
           {isDeleting ? '削除中…' : '削除'}

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { css, cx } from 'styled-system/css'
 
@@ -34,6 +35,7 @@ const FILE_INPUT_LABEL_STYLES = css({
   fontSize: 'sm',
   cursor: 'pointer',
   _hover: { borderColor: 'primary', color: 'primary' },
+  _focusWithin: { outline: '2px solid', outlineColor: 'accent', outlineOffset: '2px' },
 })
 
 const DISABLED_FILE_INPUT_LABEL_STYLES = css({ opacity: 0.4, cursor: 'not-allowed' })
@@ -48,9 +50,12 @@ export function PhotoField({
 }: PhotoFieldProps) {
   const keptPhotoCount = existingPhotoIds.length - removedPhotoIds.length
   const remainingCount = MAX_PHOTO_COUNT - keptPhotoCount - newPhotos.length
+  const [skippedCount, setSkippedCount] = useState(0)
 
   function handleFilesChange(event: ChangeEvent<HTMLInputElement>): void {
-    const files = Array.from(event.target.files ?? []).slice(0, Math.max(remainingCount, 0))
+    const selectedFiles = Array.from(event.target.files ?? [])
+    const files = selectedFiles.slice(0, Math.max(remainingCount, 0))
+    setSkippedCount(selectedFiles.length - files.length)
     // 同じファイルを続けて選べるよう選択状態を消す
     event.target.value = ''
     onNewPhotosChanged([
@@ -65,6 +70,7 @@ export function PhotoField({
 
   function handleNewPhotoRemove(photo: NewPhoto): void {
     URL.revokeObjectURL(photo.previewUrl)
+    setSkippedCount(0)
     onNewPhotosChanged(newPhotos.filter(({ id: photoId }) => photoId !== photo.id))
   }
 
@@ -78,37 +84,46 @@ export function PhotoField({
 
   return (
     <div className={css({ display: 'flex', flexWrap: 'wrap', gap: '2' })}>
-      {existingPhotoIds.map((photoId) => (
+      {existingPhotoIds.map((photoId, index) => (
         <PhotoThumbnail
           key={photoId}
           src={createPhotoUrl(photoId)}
+          label={`登録済みの写真${index + 1}`}
           isRemoved={removedPhotoIds.includes(photoId)}
+          // 削除を取り消すと上限を超える場合は取り消せないようにする
+          isToggleDisabled={removedPhotoIds.includes(photoId) && remainingCount <= 0}
           onRemoveToggled={() => handleExistingPhotoToggle(photoId)}
         />
       ))}
-      {newPhotos.map((photo) => (
+      {newPhotos.map((photo, index) => (
         <PhotoThumbnail
           key={photo.id}
           src={photo.previewUrl}
+          label={`追加する写真${index + 1}`}
           isRemoved={false}
+          isToggleDisabled={false}
           onRemoveToggled={() => handleNewPhotoRemove(photo)}
         />
       ))}
       <label
-        htmlFor={id}
         className={cx(FILE_INPUT_LABEL_STYLES, remainingCount <= 0 && DISABLED_FILE_INPUT_LABEL_STYLES)}
       >
         ＋ 写真を追加
+        <input
+          id={id}
+          type="file"
+          accept={ACCEPTED_PHOTO_TYPES.join(',')}
+          multiple
+          disabled={remainingCount <= 0}
+          onChange={handleFilesChange}
+          className={css({ srOnly: true })}
+        />
       </label>
-      <input
-        id={id}
-        type="file"
-        accept={ACCEPTED_PHOTO_TYPES.join(',')}
-        multiple
-        disabled={remainingCount <= 0}
-        onChange={handleFilesChange}
-        className={css({ srOnly: true })}
-      />
+      {skippedCount > 0 && (
+        <p role="alert" className={css({ w: '100%', fontSize: 'sm', color: 'danger' })}>
+          写真は {MAX_PHOTO_COUNT} 枚までのため，選択した写真のうち {skippedCount} 枚を追加しませんでした
+        </p>
+      )}
       <p className={css({ w: '100%', fontSize: 'xs', color: 'muted' })}>
         JPEG・PNG・WebP・AVIF，{MAX_PHOTO_COUNT} 枚まで，1枚 {MAX_PHOTO_BYTES / 1024 / 1024} MB まで
       </p>

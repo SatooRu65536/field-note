@@ -3,7 +3,11 @@ import type { KeyboardEvent } from 'react'
 import { css } from 'styled-system/css'
 
 import { INPUT_STYLES } from '@/components/ui/styles'
-import { MAX_TAG_LENGTH, normalizeTags } from '@/integrations/field-note-api/tags'
+import {
+  MAX_TAG_COUNT,
+  MAX_TAG_LENGTH,
+  normalizeTags,
+} from '@/integrations/field-note-api/tags'
 
 interface TagFieldProps {
   readonly id: string
@@ -14,9 +18,16 @@ interface TagFieldProps {
 export function TagField({ id, tags, onTagsChanged }: TagFieldProps) {
   const [draft, setDraft] = useState('')
 
-  function commitDraft(): void {
-    onTagsChanged(normalizeTags([...tags, ...draft.split(/[,，、\s]+/)]))
+  const isFull = tags.length >= MAX_TAG_COUNT
+
+  function addDraftTags(): void {
+    const nextTags = normalizeTags([...tags, ...draft.split(/[,，、\s]+/)])
+    onTagsChanged(nextTags.slice(0, MAX_TAG_COUNT))
     setDraft('')
+  }
+
+  function handleBlur(): void {
+    addDraftTags()
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
@@ -24,7 +35,7 @@ export function TagField({ id, tags, onTagsChanged }: TagFieldProps) {
     if (event.nativeEvent.isComposing) return
     if (event.key !== 'Enter' && event.key !== ',') return
     event.preventDefault()
-    commitDraft()
+    addDraftTags()
   }
 
   return (
@@ -65,10 +76,11 @@ export function TagField({ id, tags, onTagsChanged }: TagFieldProps) {
         type="text"
         value={draft}
         maxLength={MAX_TAG_LENGTH}
-        placeholder="入力して Enter で追加"
+        placeholder={isFull ? `タグは ${MAX_TAG_COUNT} 個までです` : '入力して Enter で追加'}
+        disabled={isFull}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={handleKeyDown}
-        onBlur={commitDraft}
+        onBlur={handleBlur}
         className={INPUT_STYLES}
       />
     </div>

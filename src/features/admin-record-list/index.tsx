@@ -10,7 +10,7 @@ import { useDeleteRecord } from './hooks/useDeleteRecord'
 export function AdminRecordList() {
   const { data: records } = useSuspenseQuery(adminRecordsQueryOptions())
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions())
-  const { deleteRecord, deletingRecordId, error } = useDeleteRecord()
+  const { deleteRecord, deletingRecordId, isDeleting, error } = useDeleteRecord()
 
   return (
     <AdminRecordListView
@@ -18,6 +18,7 @@ export function AdminRecordList() {
       categories={categories}
       categoryCounts={countRecordsByCategory({ categories, records })}
       deletingRecordId={deletingRecordId}
+      isDeleting={isDeleting}
       deleteError={error}
       onDeleteConfirmed={deleteRecord}
     />

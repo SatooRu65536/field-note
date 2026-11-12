@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { getCurrentCoordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 import type { Coordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 
+import { CoordinateInputs } from './CoordinateInputs'
+
 // MapLibre はブラウザでのみ動作するため，サーバーでは読み込まない
 const LocationPickerMap = lazy(() =>
   import('./LocationPickerMap').then((module) => ({ default: module.LocationPickerMap })),
@@ -40,11 +42,15 @@ export function LocationField({ location, onLocationChanged }: LocationFieldProp
           {isLocating ? '取得中…' : '現在地を使う'}
         </Button>
         <span className={css({ fontSize: 'sm', color: 'muted' })}>
-          {location
-            ? `緯度 ${location.latitude.toFixed(6)}，経度 ${location.longitude.toFixed(6)}`
-            : '地図をクリックして発見場所を指定してください'}
+          地図をクリックするか，ピンをドラッグして指定できます
         </span>
       </div>
+      {/* 地図や現在地から位置が変わったときに入力欄の表示を合わせるため，座標ごとに作り直す */}
+      <CoordinateInputs
+        key={location ? `${location.latitude},${location.longitude}` : 'empty'}
+        location={location}
+        onLocationChanged={onLocationChanged}
+      />
       {locateError && (
         <p role="alert" className={css({ fontSize: 'sm', color: 'danger' })}>
           {locateError}

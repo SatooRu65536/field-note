@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 interface FormFieldProps {
   readonly label: string
-  readonly htmlFor?: string
+  readonly htmlFor: string
   readonly hint?: string
   readonly children: ReactNode
 }

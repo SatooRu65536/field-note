@@ -44,8 +44,6 @@ export function PhotoGallery({ photoIds, alt }: PhotoGalleryProps) {
             to="/photos/$photoId"
             params={{ photoId }}
             reloadDocument
-            target="_blank"
-            rel="noreferrer"
           >
             <img
               src={createPhotoUrl(photoId)}

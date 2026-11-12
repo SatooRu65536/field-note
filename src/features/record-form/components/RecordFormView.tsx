@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import { css } from 'styled-system/css'
 
 import { Button } from '@/components/ui/Button'
+import { FieldGroup } from '@/components/ui/FieldGroup'
 import { FormField } from '@/components/ui/FormField'
 import { buttonRecipe, INPUT_STYLES } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
@@ -110,12 +111,12 @@ export function RecordFormView({
         />
       </FormField>
 
-      <FormField label="発見場所">
+      <FieldGroup legend="発見場所">
         <LocationField
           location={values.location}
           onLocationChanged={(location) => updateValues({ location })}
         />
-      </FormField>
+      </FieldGroup>
 
       <FormField label="説明" htmlFor="record-description">
         <textarea

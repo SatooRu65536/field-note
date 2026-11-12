@@ -7,7 +7,8 @@ import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 
 import type { CategoryCount } from '../categoryCounts'
-import { AdminRecordRow } from './AdminRecordRow'
+import { AdminRecordEmpty } from './AdminRecordEmpty'
+import { AdminRecordItems } from './AdminRecordItems'
 import { CategoryCountList } from './CategoryCountList'
 
 interface AdminRecordListViewProps {
@@ -15,6 +16,7 @@ interface AdminRecordListViewProps {
   readonly categories: readonly Category[]
   readonly categoryCounts: readonly CategoryCount[]
   readonly deletingRecordId: string | null
+  readonly isDeleting: boolean
   readonly deleteError: string | null
   readonly onDeleteConfirmed: (recordId: string) => void
 }
@@ -24,6 +26,7 @@ export function AdminRecordListView({
   categories,
   categoryCounts,
   deletingRecordId,
+  isDeleting,
   deleteError,
   onDeleteConfirmed,
 }: AdminRecordListViewProps) {
@@ -56,19 +59,15 @@ export function AdminRecordListView({
       )}
 
       {records.length === 0 ? (
-        <p className={css({ color: 'muted' })}>まだ記録がありません</p>
+        <AdminRecordEmpty />
       ) : (
-        <ul className={css({ display: 'flex', flexDirection: 'column', gap: '2', listStyle: 'none' })}>
-          {records.map((record) => (
-            <AdminRecordRow
-              key={record.id}
-              record={record}
-              category={categories.find(({ id }) => id === record.categoryId)}
-              isDeleting={record.id === deletingRecordId}
-              onDeleteRequested={handleDeleteRequest}
-            />
-          ))}
-        </ul>
+        <AdminRecordItems
+          records={records}
+          categories={categories}
+          deletingRecordId={deletingRecordId}
+          isDeleting={isDeleting}
+          onDeleteRequested={handleDeleteRequest}
+        />
       )}
     </div>
   )
