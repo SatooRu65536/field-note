@@ -5,7 +5,10 @@ import { MapProvider } from 'react-map-gl/maplibre'
 
 import { adminStatusQueryOptions } from '@/integrations/field-note-api/adminStatus'
 import { categoriesQueryOptions } from '@/integrations/field-note-api/categories'
-import { publicRecordSearchQueryOptions } from '@/integrations/field-note-api/records'
+import {
+  publicRecordQueryOptions,
+  publicRecordSearchQueryOptions,
+} from '@/integrations/field-note-api/records'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 import type { Coordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 
@@ -14,6 +17,12 @@ import { RecordMapPlaceholder } from './components/RecordMapPlaceholder'
 import { RecordPreviewCard } from './components/RecordPreviewCard'
 import { RecordSearchBox } from './components/RecordSearchBox'
 import { useCurrentPosition } from './hooks/useCurrentPosition'
+import { toMapView } from './mapUrl'
+import type { MapSearch } from './mapUrl'
+import { toRecordSummary } from './recordSummary'
+
+export { parseMapSearch } from './mapUrl'
+export type { MapSearch }
 
 // MapLibre はブラウザでのみ動作するため，サーバーでは読み込まない
 const RecordMapCanvas = lazy(() =>
@@ -22,10 +31,24 @@ const RecordMapCanvas = lazy(() =>
   })),
 )
 
-export function RecordMap() {
+interface RecordMapProps {
+  // 共有された URL の表示位置と記録
+  readonly search: MapSearch
+}
+
+export function RecordMap({ search }: RecordMapProps) {
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions())
   const [categoryIds, setCategoryIds] = useState<readonly string[]>([])
   const [selectedRecord, setSelectedRecord] = useState<RecordSummary | null>(null)
+  // 共有された URL の記録は，利用者が他の記録を選ぶか閉じるまで選択した状態にする
+  const [isSharedRecordDismissed, setIsSharedRecordDismissed] = useState(false)
+  const { data: sharedRecord } = useQuery({
+    ...publicRecordQueryOptions(search.record ?? ''),
+    enabled: search.record !== undefined,
+  })
+  const displayedRecord =
+    selectedRecord ??
+    (!isSharedRecordDismissed && sharedRecord ? toRecordSummary(sharedRecord) : null)
   const { currentPosition, refreshCurrentPosition } = useCurrentPosition()
   const { data: isAdmin = false } = useQuery(adminStatusQueryOptions())
   const [searchQuery, setSearchQuery] = useState('')
@@ -37,6 +60,11 @@ export function RecordMap() {
   })
   const visibleSearchResults = searchQuery === '' ? null : (searchResults ?? [])
   const navigate = useNavigate()
+
+  function selectRecord(record: RecordSummary | null): void {
+    setIsSharedRecordDismissed(true)
+    setSelectedRecord(record)
+  }
 
   async function handleLocationRightClick({ latitude, longitude }: Coordinates): Promise<void> {
     await navigate({ to: '/admin/records/new', search: { latitude, longitude } })
@@ -50,12 +78,12 @@ export function RecordMap() {
     nearestRecord: RecordSummary | null
   }): void {
     setSearchQuery(query)
-    setSelectedRecord(nearestRecord)
+    selectRecord(nearestRecord)
   }
 
   function handleSearchClear(): void {
     setSearchQuery('')
-    setSelectedRecord(null)
+    selectRecord(null)
   }
 
   function handleCategoryToggle(categoryId: string): void {
@@ -64,7 +92,7 @@ export function RecordMap() {
         ? current.filter((id) => id !== categoryId)
         : [...current, categoryId],
     )
-    setSelectedRecord(null)
+    selectRecord(null)
   }
 
   return (
@@ -72,12 +100,13 @@ export function RecordMap() {
       <ClientOnly fallback={<RecordMapPlaceholder />}>
         <Suspense fallback={<RecordMapPlaceholder />}>
           <RecordMapCanvas
+            initialView={toMapView(search)}
             categories={categories}
             categoryIds={categoryIds}
             searchResults={visibleSearchResults}
-            selectedRecordId={selectedRecord?.id ?? null}
+            selectedRecordId={displayedRecord?.id ?? null}
             currentPosition={currentPosition}
-            onRecordSelected={setSelectedRecord}
+            onRecordSelected={selectRecord}
             onCurrentPositionRequested={refreshCurrentPosition}
             // 管理者のみ，右クリックした地点を発見場所にして記録を追加できる
             onLocationRightClicked={isAdmin ? handleLocationRightClick : null}
@@ -96,11 +125,11 @@ export function RecordMap() {
         selectedCategoryIds={categoryIds}
         onCategoryToggled={handleCategoryToggle}
       />
-      {selectedRecord && (
+      {displayedRecord && (
         <RecordPreviewCard
-          record={selectedRecord}
-          category={categories.find(({ id }) => id === selectedRecord.categoryId)}
-          onClosed={() => setSelectedRecord(null)}
+          record={displayedRecord}
+          category={categories.find(({ id }) => id === displayedRecord.categoryId)}
+          onClosed={() => selectRecord(null)}
         />
       )}
     </MapProvider>

@@ -12,12 +12,14 @@ import {
 
 import { RECORD_MAP_ID } from '../constants'
 import { useMapOrientation } from '../hooks/useMapOrientation'
+import { ShareMapButton } from './ShareMapButton'
 
 interface MapControlsProps {
+  readonly selectedRecordId: string | null
   readonly onCurrentPositionRequested: () => Promise<Coordinates | null>
 }
 
-export function MapControls({ onCurrentPositionRequested }: MapControlsProps) {
+export function MapControls({ selectedRecordId, onCurrentPositionRequested }: MapControlsProps) {
   const { [RECORD_MAP_ID]: map } = useMap()
   const { bearing, pitch } = useMapOrientation()
 
@@ -54,6 +56,7 @@ export function MapControls({ onCurrentPositionRequested }: MapControlsProps) {
         onClick={handleResetNorth}
         disabled={bearing === 0 && pitch === 0}
       />
+      <ShareMapButton selectedRecordId={selectedRecordId} />
     </div>
   )
 }

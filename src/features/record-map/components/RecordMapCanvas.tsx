@@ -24,6 +24,7 @@ import { useMapBounds } from '../hooks/useMapBounds'
 import { useMapZoom } from '../hooks/useMapZoom'
 import { usePublicRecordsInBounds } from '../hooks/usePublicRecordsInBounds'
 import { loadMapView, saveMapView } from '../mapViewStorage'
+import type { MapView } from '../mapViewStorage'
 import { createRecordClusterIndex, getRecordMapItems } from '../recordClusters'
 import { calculateSpiderOffsets } from '../spiderLayout'
 import { RecordClusterMarker } from './RecordClusterMarker'
@@ -36,6 +37,8 @@ import { SpiderLegs } from './SpiderLegs'
 const WORLD_BOUNDS = { west: -180, east: 180, south: -90, north: 90 }
 
 interface RecordMapCanvasProps {
+  // 共有された URL で指定された表示位置．前回の表示位置より優先する
+  readonly initialView: MapView | null
   readonly categories: readonly Category[]
   readonly categoryIds: readonly string[]
   // 検索中の結果．検索していない場合は null とし，表示範囲内の記録を表示する
@@ -49,6 +52,7 @@ interface RecordMapCanvasProps {
 }
 
 export function RecordMapCanvas({
+  initialView,
   categories,
   categoryIds,
   searchResults,
@@ -67,10 +71,10 @@ export function RecordMapCanvas({
   // 記録が変わったときだけ索引を作り直し，地図の移動のたびに作り直さない
   const clusterIndex = useMemo(() => createRecordClusterIndex(records), [records])
   const mapItems = getRecordMapItems({ index: clusterIndex, bounds: bounds ?? WORLD_BOUNDS, zoom })
-  // 前回の表示位置は最初の描画で一度だけ読み込み，地図の初期表示に使う
-  const [savedView] = useState(loadMapView)
-  // 前回の表示位置がある場合は，現在地で上書きしないよう現在地への自動の移動を済んだものとみなす
-  const hasMovedToCurrentPosition = useRef(savedView !== null)
+  // 最初の表示位置は最初の描画で一度だけ決め，地図の初期表示に使う
+  const [startView] = useState(() => initialView ?? loadMapView())
+  // 指定された表示位置や前回の表示位置がある場合は，現在地で上書きしないよう現在地への自動の移動を済んだものとみなす
+  const hasMovedToCurrentPosition = useRef(startView !== null)
   const colorByCategoryId = new globalThis.Map(
     categories.map((category) => [category.id, category.color]),
   )
@@ -126,7 +130,7 @@ export function RecordMapCanvas({
     <div className={css({ position: 'absolute', inset: '0', zIndex: 0, isolation: 'isolate' })}>
       <Map
         id={RECORD_MAP_ID}
-        initialViewState={savedView ?? INITIAL_VIEW_STATE}
+        initialViewState={startView ?? INITIAL_VIEW_STATE}
         mapStyle={mapStyle}
         // ピンの z-index が現在地・方位のボタンより手前に出ないよう，地図の中に閉じ込める
         style={{ width: '100%', height: '100%', isolation: 'isolate' }}
@@ -190,7 +194,10 @@ export function RecordMapCanvas({
           }
         })}
       </Map>
-      <MapControls onCurrentPositionRequested={onCurrentPositionRequested} />
+      <MapControls
+        selectedRecordId={selectedRecordId}
+        onCurrentPositionRequested={onCurrentPositionRequested}
+      />
     </div>
   )
 }
