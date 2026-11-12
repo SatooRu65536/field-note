@@ -35,31 +35,29 @@ const WATERWAY_LINE_COLOR = '#86c0e6'
 // 低いズームでは英語名を表示する元のスタイルに対し，日本語名を優先する
 const LOCAL_NAME_TEXT_FIELD: ExpressionSpecification = ['coalesce', ['get', 'name:ja'], ['get', 'name']]
 
-// 元のスタイルではズーム 13 以上で薄く描く線路を，路線の位置が分かるよう濃くして広い範囲から描く
+// 元のスタイルではズーム 13 以上で薄く描く線路を，路線の位置が分かるよう濃くして駅と同じズームから描く
 const RAIL_LAYER_IDS: readonly string[] = ['rail', 'tunnel_rail']
 const RAIL_LINE_COLOR = '#8a8f98'
-const RAIL_MIN_ZOOM = 11
+// 路線と駅を表示し始めるズームレベル
+const TRANSIT_MIN_ZOOM = 12
 
 const SOURCE_ID = 'protomaps'
 const STATION_COLOR = '#4a5160'
 // 元のスタイルの地名のラベルと同じフォント．CJK のフォントを含む
 const LABEL_FONT = ['Montserrat SemiBold', 'Open Sans Bold', 'Noto Sans Regular', 'Noto Sans CJK JP Regular']
-const STATION_MIN_ZOOM = 12
 
-// 元のスタイルにない，地下鉄の路線と駅を描くレイヤー
+// 元のスタイルにない，地下鉄の路線と駅を描くレイヤー．地下鉄も他の路線と同じく実線で描く
 const TRANSIT_LAYERS: readonly LayerSpecification[] = [
   {
     id: 'field_note_subway',
     type: 'line',
     source: SOURCE_ID,
     'source-layer': 'roads',
-    minzoom: RAIL_MIN_ZOOM,
+    minzoom: TRANSIT_MIN_ZOOM,
     filter: ['all', ['==', ['get', 'kind'], 'rail'], ['==', ['get', 'kind_detail'], 'subway']],
     paint: {
       'line-color': RAIL_LINE_COLOR,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 16, 2],
-      'line-dasharray': [2, 2],
-      'line-opacity': 0.7,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 16, 3],
     },
   },
   {
@@ -67,7 +65,7 @@ const TRANSIT_LAYERS: readonly LayerSpecification[] = [
     type: 'circle',
     source: SOURCE_ID,
     'source-layer': 'pois',
-    minzoom: STATION_MIN_ZOOM,
+    minzoom: TRANSIT_MIN_ZOOM,
     filter: ['==', ['get', 'kind'], 'station'],
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 5],
@@ -81,7 +79,7 @@ const TRANSIT_LAYERS: readonly LayerSpecification[] = [
     type: 'symbol',
     source: SOURCE_ID,
     'source-layer': 'pois',
-    minzoom: STATION_MIN_ZOOM,
+    minzoom: TRANSIT_MIN_ZOOM,
     filter: ['==', ['get', 'kind'], 'station'],
     layout: {
       'text-field': ['concat', LOCAL_NAME_TEXT_FIELD, '駅'],
@@ -117,7 +115,7 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
   if (layer.type === 'line' && RAIL_LAYER_IDS.includes(layer.id)) {
     return {
       ...layer,
-      minzoom: RAIL_MIN_ZOOM,
+      minzoom: TRANSIT_MIN_ZOOM,
       paint: { ...layer.paint, 'line-color': RAIL_LINE_COLOR },
     }
   }

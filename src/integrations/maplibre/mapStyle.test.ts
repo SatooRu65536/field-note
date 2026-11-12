@@ -108,13 +108,14 @@ describe('customizeMapStyle', () => {
 })
 
 describe('customizeMapStyle の駅と路線', () => {
-  it('線路を濃い色にし，広い範囲から描く', () => {
+  it('線路を濃い色にし，駅と同じズームから描く', () => {
     // Act
     const style = customizeMapStyle(STYLE)
 
     // Assert
+    expect(findLayer({ style, id: 'field_note_station_dot' })).toMatchObject({ minzoom: 12 })
     expect(findLayer({ style, id: 'rail' })).toMatchObject({
-      minzoom: 11,
+      minzoom: 12,
       paint: { 'line-color': '#8a8f98', 'line-width': 1 },
     })
   })
@@ -129,6 +130,18 @@ describe('customizeMapStyle の駅と路線', () => {
       'field_note_station_dot',
       'field_note_station_label',
     ])
+  })
+})
+
+describe('customizeMapStyle の地下鉄', () => {
+  it('地下鉄を他の路線と同じ色の実線で描く', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+    const subway = findLayer({ style, id: 'field_note_subway' })
+
+    // Assert
+    expect(subway).toMatchObject({ minzoom: 12, paint: { 'line-color': '#8a8f98' } })
+    expect(subway?.type === 'line' && subway.paint?.['line-dasharray']).toBeFalsy()
   })
 })
 

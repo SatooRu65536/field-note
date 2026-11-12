@@ -9,7 +9,6 @@ import { publicRecordSearchQueryOptions } from '@/integrations/field-note-api/re
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 import type { Coordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 
-import { AddRecordHint } from './components/AddRecordHint'
 import { CategoryFilter } from './components/CategoryFilter'
 import { RecordMapPlaceholder } from './components/RecordMapPlaceholder'
 import { RecordPreviewCard } from './components/RecordPreviewCard'
@@ -94,7 +93,6 @@ export function RecordMap() {
         selectedCategoryIds={categoryIds}
         onCategoryToggled={handleCategoryToggle}
       />
-      {isAdmin && !selectedRecord && <AddRecordHint />}
       {selectedRecord && (
         <RecordPreviewCard
           record={selectedRecord}
