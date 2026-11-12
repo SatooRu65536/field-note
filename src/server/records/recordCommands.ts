@@ -313,7 +313,6 @@ export async function updateRecord({
             memo: input.memo,
             // 記録はすべて一般公開する
           isPublic: true,
-            updatedAt: new Date(),
           })
           .where(eq(records.id, recordId)),
         db.delete(recordTags).where(eq(recordTags.recordId, recordId)),

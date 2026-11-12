@@ -61,5 +61,5 @@ export function createSaveNameMemoQuery({
   return db
     .insert(nameMemos)
     .values({ nameKey, memo })
-    .onConflictDoUpdate({ target: nameMemos.nameKey, set: { memo, updatedAt: new Date() } })
+    .onConflictDoUpdate({ target: nameMemos.nameKey, set: { memo } })
 }

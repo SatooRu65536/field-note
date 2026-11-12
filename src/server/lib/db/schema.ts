@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm'
 import {
   index,
   integer,
@@ -35,10 +34,11 @@ export const records = sqliteTable(
     isDiscovered: integer('is_discovered', { mode: 'boolean' }).notNull().default(true),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .$defaultFn(() => new Date())
+      .$onUpdateFn(() => new Date()),
   },
   (table) => [
     index('records_location_index').on(table.latitude, table.longitude),
@@ -58,7 +58,7 @@ export const recordPhotos = sqliteTable(
     sortOrder: integer('sort_order').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .$defaultFn(() => new Date()),
   },
   (table) => [index('record_photos_record_id_index').on(table.recordId)],
 )
@@ -84,5 +84,6 @@ export const nameMemos = sqliteTable('name_memos', {
   memo: text().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
     .notNull()
-    .default(sql`(unixepoch() * 1000)`),
+    .$defaultFn(() => new Date())
+    .$onUpdateFn(() => new Date()),
 })
