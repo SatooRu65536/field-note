@@ -17,13 +17,15 @@
       "binding": "DB",
       "database_name": "field-note",
       "database_id": "9498a3ba-2f45-4dc6-8a3f-61dfda798de8",
-      "migrations_dir": "drizzle"
+      "migrations_dir": "drizzle",
+      "remote": true,
     }
   ],
   "r2_buckets": [
     {
       "binding": "PHOTOS",
-      "bucket_name": "field-note-photos"
+      "bucket_name": "field-note-photos",
+      "remote": true,
     }
   ]
 }
