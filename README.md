@@ -1,196 +1,99 @@
-Welcome to your new TanStack Start app!
+# Field Note
 
-# Getting Started
+現実世界で発見した自然物を，写真・発見場所・発見日時とともに地図上に記録・共有する Web アプリ．
+本ドキュメントは，開発環境の構築とデプロイを行う開発者を対象とする．
+機能の企画は [docs/proposal.md](docs/proposal.md) を参照すること．
 
-To run this application:
+## 構成
+
+| 分類 | 技術 |
+| --- | --- |
+| フレームワーク | TanStack Start（SSR・サーバー関数） |
+| データ取得 | TanStack Query |
+| スタイル | Panda CSS |
+| 地図 | MapLibre GL JS，react-map-gl，PMTiles |
+| データベース | Cloudflare D1（Drizzle ORM） |
+| 写真の保存 | Cloudflare R2 |
+| 管理画面の保護 | Cloudflare Access |
+| ホスティング | Cloudflare Workers |
+
+画面は SSR し，データの取得・更新は TanStack Start のサーバー関数で行う．
+写真は `/photos/$photoId` から配信し，非公開の記録の写真は管理者にのみ返す．
+
+```text
+画面（routes → features） → integrations/field-note-api（サーバー関数） → server/ → D1・R2
+```
+
+## 開発環境の構築
 
 ```bash
 pnpm install
-pnpm dev
+pnpm run db:migrate:local
+pnpm run dev
 ```
 
-# Building For Production
+- `pnpm install` の `prepare` で，Panda CSS のコード（`styled-system/`）を生成する
+- `pnpm run db:migrate:local` で，ローカルの D1 にテーブルと初期カテゴリを作成する
+- 開発サーバーでは，管理者の認証を省略する
 
-To build this application for production:
+### 環境変数
+
+| 変数名 | 設定先 | 説明 |
+| --- | --- | --- |
+| `VITE_PMTILES_URL` | `.env.local`（ビルド時） | 地図タイルの PMTiles の URL．未設定の場合，地図タイルを表示しない |
+| `CF_ACCESS_TEAM_DOMAIN` | Workers の変数 | Cloudflare Access のチームドメイン（例：`https://<team>.cloudflareaccess.com`） |
+| `CF_ACCESS_AUD` | Workers の変数 | 管理画面を保護する Cloudflare Access アプリケーションの AUD タグ |
+
+`.env.example` を `.env.local` にコピーして値を設定すること．
+
+### 地図タイル
+
+地図タイルは，[Planetiler](https://github.com/onthegomap/planetiler) の OpenMapTiles プロファイルで OSM のデータから生成した PMTiles を使う．
 
 ```bash
-pnpm build
+java -jar planetiler.jar --osm-path=<OSM PBF ファイル> --output=map.pmtiles --minzoom=4 --maxzoom=16 --download
 ```
 
-## Styling
+生成した PMTiles を R2 などに配置し，その URL を `VITE_PMTILES_URL` に設定すること．
+配置先では，アプリのオリジンからの `GET`・`HEAD` と `Range` ヘッダーを CORS で許可すること．
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+## スクリプト
 
-### Removing Tailwind CSS
+| コマンド | 内容 |
+| --- | --- |
+| `pnpm run dev` | 開発サーバーを起動する |
+| `pnpm run build` | 本番用にビルドする |
+| `pnpm run generate-routes` | `src/routeTree.gen.ts` を生成する |
+| `pnpm run typecheck` | 型検査を行う |
+| `pnpm run test` | テストを実行する |
+| `pnpm run db:generate` | スキーマの変更からマイグレーションを生成する |
+| `pnpm run db:migrate:local` | ローカルの D1 にマイグレーションを適用する |
+| `pnpm run db:migrate:remote` | 本番の D1 にマイグレーションを適用する |
+| `pnpm run deploy` | ビルドして Cloudflare Workers にデプロイする |
 
-If you prefer not to use Tailwind CSS:
+## デプロイ
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
+1. D1 のデータベースと R2 のバケットを作成する
 
+   ```bash
+   pnpm exec wrangler d1 create field-note
+   pnpm exec wrangler r2 bucket create field-note-photos
+   ```
 
-## Deploy to Cloudflare Workers
+2. 作成したデータベースの ID を [wrangler.jsonc](wrangler.jsonc) の `database_id` に設定する
+3. 本番の D1 にマイグレーションを適用する
 
-This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`:
+   ```bash
+   pnpm run db:migrate:remote
+   ```
 
-1. Install Wrangler: `npm install -g wrangler`
-2. Authenticate: `wrangler login`
-3. Deploy: `npx wrangler deploy`
+4. Cloudflare Access で，`/admin` 以下のパスを保護するアプリケーションを作成する
+5. `CF_ACCESS_TEAM_DOMAIN`・`CF_ACCESS_AUD` を Workers の変数に設定する
+6. デプロイする
 
-For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
+   ```bash
+   pnpm run deploy
+   ```
 
-KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+管理者向けのサーバー関数と写真の配信は `/admin` 以外のパスで動くため，Access の保護対象のパス外となる．
+そのため，サーバー側で `Cf-Access-Jwt-Assertion` ヘッダーまたは `CF_Authorization` Cookie の JWT を検証する．
