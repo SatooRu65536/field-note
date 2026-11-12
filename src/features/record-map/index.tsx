@@ -86,6 +86,7 @@ export function RecordMap() {
       </ClientOnly>
       <RecordSearchBox
         categoryIds={categoryIds}
+        isAdmin={isAdmin}
         resultCount={visibleSearchResults?.length ?? null}
         onSearched={handleSearch}
         onCleared={handleSearchClear}

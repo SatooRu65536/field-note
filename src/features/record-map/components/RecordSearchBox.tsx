@@ -9,13 +9,18 @@ import {
   publicRecordSearchQueryOptions,
 } from '@/integrations/field-note-api/records'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
+import { placeSearchQueryOptions } from '@/integrations/gsi/placeSearch'
+import type { Place } from '@/integrations/gsi/placeSearch'
 import { FOCUS_ZOOM, MAP_TRANSITION_DURATION_MS } from '@/integrations/maplibre/constants'
 
 import { RECORD_MAP_ID } from '../constants'
 import { findNearestRecord } from '../nearestRecord'
+import { PlaceResultList } from './PlaceResultList'
 
 interface RecordSearchBoxProps {
   readonly categoryIds: readonly string[]
+  // 管理者は記録に加えて地名も検索できる
+  readonly isAdmin: boolean
   // 検索中の結果の件数．検索していない場合は null
   readonly resultCount: number | null
   readonly onSearched: (search: { query: string; nearestRecord: RecordSummary | null }) => void
@@ -24,6 +29,7 @@ interface RecordSearchBoxProps {
 
 export function RecordSearchBox({
   categoryIds,
+  isAdmin,
   resultCount,
   onSearched,
   onCleared,
@@ -33,6 +39,7 @@ export function RecordSearchBox({
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [places, setPlaces] = useState<readonly Place[]>([])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -44,13 +51,23 @@ export function RecordSearchBox({
 
     setIsSearching(true)
     setError(null)
-    const records = await queryClient
-      .fetchQuery(publicRecordSearchQueryOptions({ query, categoryIds }))
-      .catch((searchError: unknown) => {
-        console.error('記録の検索に失敗しました', searchError)
-        return null
-      })
+    const [records, foundPlaces] = await Promise.all([
+      queryClient
+        .fetchQuery(publicRecordSearchQueryOptions({ query, categoryIds }))
+        .catch((searchError: unknown) => {
+          console.error('記録の検索に失敗しました', searchError)
+          return null
+        }),
+      isAdmin
+        ? queryClient.fetchQuery(placeSearchQueryOptions(query)).catch((searchError: unknown) => {
+            // 地名が見つからなくても記録の検索結果は使えるため，記録の検索は続ける
+            console.error('地名の検索に失敗しました', searchError)
+            return []
+          })
+        : Promise.resolve([]),
+    ])
     setIsSearching(false)
+    setPlaces(foundPlaces)
     if (!records) {
       setError('検索に失敗しました．時間をおいて再度お試しください')
       return
@@ -73,7 +90,17 @@ export function RecordSearchBox({
 
   function handleClear(): void {
     setInput('')
+    setPlaces([])
     onCleared()
+  }
+
+  function handlePlaceSelect(place: Place): void {
+    setPlaces([])
+    map?.flyTo({
+      center: [place.longitude, place.latitude],
+      zoom: Math.max(map.getZoom(), FOCUS_ZOOM),
+      duration: MAP_TRANSITION_DURATION_MS,
+    })
   }
 
   return (
@@ -108,8 +135,8 @@ export function RecordSearchBox({
       >
         <input
           type="search"
-          aria-label="名前・タグで検索"
-          placeholder="名前・タグで検索"
+          aria-label={isAdmin ? '名前・タグ・地名で検索' : '名前・タグで検索'}
+          placeholder={isAdmin ? '名前・タグ・地名で検索' : '名前・タグで検索'}
           value={input}
           maxLength={MAX_SEARCH_QUERY_LENGTH}
           onChange={(event) => setInput(event.target.value)}
@@ -174,6 +201,7 @@ export function RecordSearchBox({
           {resultCount === 0 ? '見つかりませんでした' : `${resultCount} 件見つかりました（最寄りへ移動）`}
         </p>
       )}
+      {places.length > 0 && <PlaceResultList places={places} onPlaceSelected={handlePlaceSelect} />}
     </form>
   )
 }

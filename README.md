@@ -49,6 +49,12 @@ pnpm run dev
 スタイルの URL は [src/integrations/maplibre/mapStyle.ts](src/integrations/maplibre/mapStyle.ts) で指定している．
 利用条件は CARTO の規約を確認すること．
 
+### 地名検索
+
+管理者は，地図の検索欄で国土地理院の地名検索 API（キー不要）を使って地名を検索できる．
+処理は [src/integrations/gsi/placeSearch.ts](src/integrations/gsi/placeSearch.ts) にある．
+検索結果には出典として「地名検索：国土地理院」を表示している．
+
 ## スクリプト
 
 | コマンド | 内容 |
