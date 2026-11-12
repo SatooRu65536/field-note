@@ -1,7 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Map, useMap } from 'react-map-gl/maplibre'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { css } from 'styled-system/css'
@@ -13,6 +13,7 @@ import {
   DEFAULT_PIN_COLOR,
   FOCUS_ZOOM,
   INITIAL_VIEW_STATE,
+  MAP_TRANSITION_DURATION_MS,
   MAX_ZOOM,
   MIN_ZOOM,
 } from '@/integrations/maplibre/constants'
@@ -20,10 +21,16 @@ import { mapStyleQueryOptions } from '@/integrations/maplibre/mapStyle'
 
 import { RECORD_MAP_ID } from '../constants'
 import { useMapBounds } from '../hooks/useMapBounds'
+import { useMapZoom } from '../hooks/useMapZoom'
 import { usePublicRecordsInBounds } from '../hooks/usePublicRecordsInBounds'
+import { createRecordClusterIndex, getRecordMapItems } from '../recordClusters'
+import { RecordClusterMarker } from './RecordClusterMarker'
 import { CurrentPositionMarker } from './CurrentPositionMarker'
 import { MapControls } from './MapControls'
 import { RecordPin } from './RecordPin'
+
+// 地図の読み込み前に，記録をまとめるときの範囲
+const WORLD_BOUNDS = { west: -180, east: 180, south: -90, north: 90 }
 
 interface RecordMapCanvasProps {
   readonly categories: readonly Category[]
@@ -53,6 +60,10 @@ export function RecordMapCanvas({
   const bounds = useMapBounds()
   const recordsInBounds = usePublicRecordsInBounds({ bounds, categoryIds })
   const records = searchResults ?? recordsInBounds
+  const zoom = useMapZoom()
+  // 記録が変わったときだけ索引を作り直し，地図の移動のたびに作り直さない
+  const clusterIndex = useMemo(() => createRecordClusterIndex(records), [records])
+  const mapItems = getRecordMapItems({ index: clusterIndex, bounds: bounds ?? WORLD_BOUNDS, zoom })
   const hasMovedToCurrentPosition = useRef(false)
   const colorByCategoryId = new globalThis.Map(
     categories.map((category) => [category.id, category.color]),
@@ -67,6 +78,22 @@ export function RecordMapCanvas({
       zoom: FOCUS_ZOOM,
     })
   }, [map, currentPosition])
+
+  function handleClusterSelect({
+    latitude,
+    longitude,
+    expansionZoom,
+  }: {
+    latitude: number
+    longitude: number
+    expansionZoom: number
+  }): void {
+    map?.flyTo({
+      center: [longitude, latitude],
+      zoom: Math.min(expansionZoom, MAX_ZOOM),
+      duration: MAP_TRANSITION_DURATION_MS,
+    })
+  }
 
   function handleContextMenu(event: MapLayerMouseEvent): void {
     if (!onLocationRightClicked) return
@@ -98,15 +125,25 @@ export function RecordMapCanvas({
         dragRotate={onLocationRightClicked === null}
       >
         {currentPosition && <CurrentPositionMarker position={currentPosition} />}
-        {records.map((record) => (
-          <RecordPin
-            key={record.id}
-            record={record}
-            color={colorByCategoryId.get(record.categoryId) ?? DEFAULT_PIN_COLOR}
-            isSelected={record.id === selectedRecordId}
-            onRecordSelected={onRecordSelected}
-          />
-        ))}
+        {mapItems.map((item) =>
+          item.type === 'cluster' ? (
+            <RecordClusterMarker
+              key={`cluster-${item.clusterId}`}
+              latitude={item.latitude}
+              longitude={item.longitude}
+              recordCount={item.recordCount}
+              onClusterSelected={() => handleClusterSelect(item)}
+            />
+          ) : (
+            <RecordPin
+              key={item.record.id}
+              record={item.record}
+              color={colorByCategoryId.get(item.record.categoryId) ?? DEFAULT_PIN_COLOR}
+              isSelected={item.record.id === selectedRecordId}
+              onRecordSelected={onRecordSelected}
+            />
+          ),
+        )}
       </Map>
       <MapControls onCurrentPositionRequested={onCurrentPositionRequested} />
     </div>

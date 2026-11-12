@@ -33,6 +33,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-map-gl": "^8.1.3",
+    "supercluster": "^9.1.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -40,6 +41,7 @@
     "@cloudflare/workers-types": "^5.20261110.1",
     "@pandacss/dev": "^1.12.0",
     "@tanstack/devtools-vite": "0.8.6",
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
