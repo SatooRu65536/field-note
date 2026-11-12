@@ -1,9 +1,9 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Map, useMap } from 'react-map-gl/maplibre'
-import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
+import type { MapLayerMouseEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { css } from 'styled-system/css'
 
 import type { Category } from '@/integrations/field-note-api/categories'
@@ -23,6 +23,7 @@ import { RECORD_MAP_ID } from '../constants'
 import { useMapBounds } from '../hooks/useMapBounds'
 import { useMapZoom } from '../hooks/useMapZoom'
 import { usePublicRecordsInBounds } from '../hooks/usePublicRecordsInBounds'
+import { loadMapView, saveMapView } from '../mapViewStorage'
 import { createRecordClusterIndex, getRecordMapItems } from '../recordClusters'
 import { RecordClusterMarker } from './RecordClusterMarker'
 import { CurrentPositionMarker } from './CurrentPositionMarker'
@@ -64,7 +65,10 @@ export function RecordMapCanvas({
   // 記録が変わったときだけ索引を作り直し，地図の移動のたびに作り直さない
   const clusterIndex = useMemo(() => createRecordClusterIndex(records), [records])
   const mapItems = getRecordMapItems({ index: clusterIndex, bounds: bounds ?? WORLD_BOUNDS, zoom })
-  const hasMovedToCurrentPosition = useRef(false)
+  // 前回の表示位置は最初の描画で一度だけ読み込み，地図の初期表示に使う
+  const [savedView] = useState(loadMapView)
+  // 前回の表示位置がある場合は，現在地で上書きしないよう現在地への自動の移動を済んだものとみなす
+  const hasMovedToCurrentPosition = useRef(savedView !== null)
   const colorByCategoryId = new globalThis.Map(
     categories.map((category) => [category.id, category.color]),
   )
@@ -78,6 +82,15 @@ export function RecordMapCanvas({
       zoom: FOCUS_ZOOM,
     })
   }, [map, currentPosition])
+
+  function handleMoveEnd(event: ViewStateChangeEvent): void {
+    // 次に開いたときに同じ場所から見られるよう，移動が収まるたびに表示位置を保存する
+    saveMapView({
+      latitude: event.viewState.latitude,
+      longitude: event.viewState.longitude,
+      zoom: event.viewState.zoom,
+    })
+  }
 
   function handleClusterSelect({
     latitude,
@@ -110,7 +123,7 @@ export function RecordMapCanvas({
     <div className={css({ position: 'absolute', inset: '0' })}>
       <Map
         id={RECORD_MAP_ID}
-        initialViewState={INITIAL_VIEW_STATE}
+        initialViewState={savedView ?? INITIAL_VIEW_STATE}
         mapStyle={mapStyle}
         style={{ width: '100%', height: '100%' }}
         minZoom={MIN_ZOOM}
@@ -121,6 +134,7 @@ export function RecordMapCanvas({
         attributionControl={{ compact: true }}
         onClick={() => onRecordSelected(null)}
         onContextMenu={handleContextMenu}
+        onMoveEnd={handleMoveEnd}
         // 右ボタンのドラッグによる回転と，右クリックでの記録の追加が重ならないよう，管理者はマウスで回転させない
         dragRotate={onLocationRightClicked === null}
       >
