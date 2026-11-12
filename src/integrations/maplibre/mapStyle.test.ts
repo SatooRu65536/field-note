@@ -23,6 +23,13 @@ const STYLE: StyleSpecification = {
       source: 'protomaps',
       layout: { 'text-field': ['get', 'name:en'], 'text-size': 12 },
     },
+    {
+      id: 'rail',
+      type: 'line',
+      source: 'protomaps',
+      minzoom: 13,
+      paint: { 'line-color': '#dddddd', 'line-width': 1 },
+    },
     { id: 'roadname_minor', type: 'symbol', source: 'protomaps', layout: { 'text-field': '' } },
     { id: 'housenumber', type: 'symbol', source: 'protomaps', layout: { 'text-field': '' } },
   ],
@@ -97,6 +104,31 @@ describe('customizeMapStyle', () => {
     // Assert
     expect(findLayer({ style: style, id: 'landuse' })).toEqual(findLayer({ style: STYLE, id: 'landuse' }))
     expect(findLayer({ style: style, id: 'background' })).toEqual(findLayer({ style: STYLE, id: 'background' }))
+  })
+})
+
+describe('customizeMapStyle の駅と路線', () => {
+  it('線路を濃い色にし，広い範囲から描く', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(findLayer({ style, id: 'rail' })).toMatchObject({
+      minzoom: 11,
+      paint: { 'line-color': '#8a8f98', 'line-width': 1 },
+    })
+  })
+
+  it('地下鉄の路線と駅のレイヤーを最後に加える', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(style.layers.slice(-3).map(({ id }) => id)).toEqual([
+      'field_note_subway',
+      'field_note_station_dot',
+      'field_note_station_label',
+    ])
   })
 })
 

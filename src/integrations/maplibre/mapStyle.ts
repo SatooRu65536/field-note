@@ -35,6 +35,70 @@ const WATERWAY_LINE_COLOR = '#86c0e6'
 // 低いズームでは英語名を表示する元のスタイルに対し，日本語名を優先する
 const LOCAL_NAME_TEXT_FIELD: ExpressionSpecification = ['coalesce', ['get', 'name:ja'], ['get', 'name']]
 
+// 元のスタイルではズーム 13 以上で薄く描く線路を，路線の位置が分かるよう濃くして広い範囲から描く
+const RAIL_LAYER_IDS: readonly string[] = ['rail', 'tunnel_rail']
+const RAIL_LINE_COLOR = '#8a8f98'
+const RAIL_MIN_ZOOM = 11
+
+const SOURCE_ID = 'protomaps'
+const STATION_COLOR = '#4a5160'
+// 元のスタイルの地名のラベルと同じフォント．CJK のフォントを含む
+const LABEL_FONT = ['Montserrat SemiBold', 'Open Sans Bold', 'Noto Sans Regular', 'Noto Sans CJK JP Regular']
+const STATION_MIN_ZOOM = 12
+
+// 元のスタイルにない，地下鉄の路線と駅を描くレイヤー
+const TRANSIT_LAYERS: readonly LayerSpecification[] = [
+  {
+    id: 'field_note_subway',
+    type: 'line',
+    source: SOURCE_ID,
+    'source-layer': 'roads',
+    minzoom: RAIL_MIN_ZOOM,
+    filter: ['all', ['==', ['get', 'kind'], 'rail'], ['==', ['get', 'kind_detail'], 'subway']],
+    paint: {
+      'line-color': RAIL_LINE_COLOR,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 16, 2],
+      'line-dasharray': [2, 2],
+      'line-opacity': 0.7,
+    },
+  },
+  {
+    id: 'field_note_station_dot',
+    type: 'circle',
+    source: SOURCE_ID,
+    'source-layer': 'pois',
+    minzoom: STATION_MIN_ZOOM,
+    filter: ['==', ['get', 'kind'], 'station'],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 5],
+      'circle-color': '#ffffff',
+      'circle-stroke-color': STATION_COLOR,
+      'circle-stroke-width': 2,
+    },
+  },
+  {
+    id: 'field_note_station_label',
+    type: 'symbol',
+    source: SOURCE_ID,
+    'source-layer': 'pois',
+    minzoom: STATION_MIN_ZOOM,
+    filter: ['==', ['get', 'kind'], 'station'],
+    layout: {
+      'text-field': ['concat', LOCAL_NAME_TEXT_FIELD, '駅'],
+      'text-font': LABEL_FONT,
+      'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 13],
+      'text-anchor': 'top',
+      'text-offset': [0, 0.6],
+      'text-max-width': 8,
+    },
+    paint: {
+      'text-color': STATION_COLOR,
+      'text-halo-color': 'rgba(255, 255, 255, 0.9)',
+      'text-halo-width': 1.5,
+    },
+  },
+]
+
 /**
  * レイヤーの色・ラベルを Field Note 向けに変更する
  * @param layer 元のレイヤー
@@ -50,6 +114,13 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
   if (layer.type === 'fill' && layer.id === 'water') {
     return { ...layer, paint: { ...layer.paint, 'fill-color': WATER_FILL_COLOR } }
   }
+  if (layer.type === 'line' && RAIL_LAYER_IDS.includes(layer.id)) {
+    return {
+      ...layer,
+      minzoom: RAIL_MIN_ZOOM,
+      paint: { ...layer.paint, 'line-color': RAIL_LINE_COLOR },
+    }
+  }
   if (layer.type === 'line' && layer.id === 'waterway') {
     return { ...layer, paint: { ...layer.paint, 'line-color': WATERWAY_LINE_COLOR } }
   }
@@ -60,16 +131,18 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
 }
 
 /**
- * CARTO のスタイルを，地名を絞り込み緑地・河川の色を濃くしたスタイルに変換する
+ * CARTO のスタイルを，地名を絞り込み，緑地・河川・線路の色を濃くし，駅を加えたスタイルに変換する
  * @param style CARTO のスタイル
  * @returns 変換したスタイル
  */
 export function customizeMapStyle(style: StyleSpecification): StyleSpecification {
   return {
     ...style,
-    layers: style.layers
-      .filter((layer) => !HIDDEN_LAYER_IDS.includes(layer.id))
-      .map(customizeLayer),
+    // 駅のラベルを他のラベルと同じく最前面に描くため，元のレイヤーの後ろに加える
+    layers: [
+      ...style.layers.filter((layer) => !HIDDEN_LAYER_IDS.includes(layer.id)).map(customizeLayer),
+      ...TRANSIT_LAYERS,
+    ],
   }
 }
 
