@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { filterNameSuggestions, findSavedNameMemo, MAX_NAME_SUGGESTIONS } from './candidates'
+import {
+  filterNameSuggestions,
+  findSavedNameMemo,
+  inferCategoryId,
+  MAX_NAME_SUGGESTIONS,
+} from './candidates'
 
 const CANDIDATES = [
-  { name: 'コナラ', recordCount: 5 },
-  { name: 'こならの実', recordCount: 3 },
-  { name: 'クヌギ', recordCount: 2 },
-  { name: 'ナラガシワ', recordCount: 1 },
+  { name: 'コナラ', recordCount: 5, categoryId: 'seed' },
+  { name: 'こならの実', recordCount: 3, categoryId: 'seed' },
+  { name: 'クヌギ', recordCount: 2, categoryId: 'plant' },
+  { name: 'ナラガシワ', recordCount: 1, categoryId: 'plant' },
 ]
 
 const MEMOS = [{ nameKey: 'こなら', memo: 'ブナ科の落葉高木' }]
@@ -49,6 +54,7 @@ describe('filterNameSuggestions', () => {
     const candidates = Array.from({ length: MAX_NAME_SUGGESTIONS + 1 }, (_, index) => ({
       name: `イチョウ${index}`,
       recordCount: 1,
+      categoryId: 'plant',
     }))
 
     // Act
@@ -74,5 +80,23 @@ describe('findSavedNameMemo', () => {
 
     // Assert
     expect(memo).toBe('')
+  })
+})
+
+describe('inferCategoryId', () => {
+  it('ひらがな・カタカナの違いを無視して同じ名前の記録のカテゴリを返す', () => {
+    // Act
+    const categoryId = inferCategoryId({ candidates: CANDIDATES, name: ' くぬぎ ' })
+
+    // Assert
+    expect(categoryId).toBe('plant')
+  })
+
+  it('前方一致するだけの名前からは推定しない', () => {
+    // Act
+    const categoryId = inferCategoryId({ candidates: CANDIDATES, name: 'クヌ' })
+
+    // Assert
+    expect(categoryId).toBeNull()
   })
 })

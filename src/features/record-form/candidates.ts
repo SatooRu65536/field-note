@@ -41,3 +41,21 @@ export function findSavedNameMemo({
   const nameKey = normalizeKana(name)
   return memos.find((memo) => memo.nameKey === nameKey)?.memo ?? ''
 }
+
+/**
+ * 過去の同じ名前の記録から，カテゴリを推定する
+ * @param candidates 過去の名前と，その名前で最も多く使われたカテゴリ
+ * @param name 入力中の名前．ひらがな・カタカナの違いは無視する
+ * @returns カテゴリの ID．同じ名前の記録がない場合は null
+ */
+export function inferCategoryId({
+  candidates,
+  name,
+}: {
+  candidates: readonly NameCandidate[]
+  name: string
+}): string | null {
+  const nameKey = normalizeKana(name)
+  if (nameKey === '') return null
+  return candidates.find((candidate) => normalizeKana(candidate.name) === nameKey)?.categoryId ?? null
+}

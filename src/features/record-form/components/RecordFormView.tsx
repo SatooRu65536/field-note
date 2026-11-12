@@ -16,7 +16,7 @@ import {
   MAX_NAME_LENGTH,
 } from '@/integrations/field-note-api/recordFormData'
 
-import { filterNameSuggestions, findSavedNameMemo } from '../candidates'
+import { filterNameSuggestions, findSavedNameMemo, inferCategoryId } from '../candidates'
 import type { RecordFormValues } from '../types'
 import { LocationField } from './LocationField'
 import { NameMemoField } from './NameMemoField'
@@ -47,6 +47,11 @@ export function RecordFormView({
   onSubmitted,
 }: RecordFormViewProps) {
   const [values, setValues] = useState(initialValues)
+  // 利用者が選んだカテゴリは，名前からの推定で上書きしない．編集時の登録済みのカテゴリも利用者が選んだものとみなす
+  const [isCategorySelectedByUser, setIsCategorySelectedByUser] = useState(
+    initialValues.categoryId !== '',
+  )
+  const isCategoryInferred = !isCategorySelectedByUser && values.categoryId !== ''
 
   function updateValues(changes: Partial<RecordFormValues>): void {
     setValues((current) => ({ ...current, ...changes }))
@@ -55,7 +60,20 @@ export function RecordFormView({
   function handleNameChange(name: string): void {
     // 別の名前になると共有するメモも変わるため，編集中の名前ごとのメモを破棄して保存済みのメモを表示する
     const isSameName = normalizeKana(name) === normalizeKana(values.name)
-    updateValues(isSameName ? { name } : { name, nameMemo: null })
+    const nameChanges = isSameName ? { name } : { name, nameMemo: null }
+    if (isCategorySelectedByUser) {
+      updateValues(nameChanges)
+      return
+    }
+    updateValues({
+      ...nameChanges,
+      categoryId: inferCategoryId({ candidates: nameCandidates, name }) ?? '',
+    })
+  }
+
+  function handleCategoryChange(categoryId: string): void {
+    setIsCategorySelectedByUser(categoryId !== '')
+    updateValues({ categoryId })
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -110,11 +128,15 @@ export function RecordFormView({
         />
       )}
 
-      <FormField label="カテゴリ" htmlFor="record-category">
+      <FormField
+        label="カテゴリ"
+        htmlFor="record-category"
+        hint={isCategoryInferred ? '過去の同じ名前の記録から推定しました' : undefined}
+      >
         <select
           id="record-category"
           value={values.categoryId}
-          onChange={(event) => updateValues({ categoryId: event.target.value })}
+          onChange={(event) => handleCategoryChange(event.target.value)}
           className={INPUT_STYLES}
         >
           <option value="">選択してください</option>

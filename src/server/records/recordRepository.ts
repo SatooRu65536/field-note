@@ -159,16 +159,16 @@ export async function findPhotoLocation({
 /**
  * 過去の記録に使われた名前を，ひらがな・カタカナの違いをまとめて記録の多い順に取得する
  * @param db Drizzle のクライアント
- * @returns 名前と記録の件数
+ * @returns 名前と記録の件数，推定するカテゴリ
  */
 export async function listNameCandidates(db: Database): Promise<readonly NameCandidate[]> {
-  const names = await db
-    .select({ name: records.name, recordCount: count() })
+  const rows = await db
+    .select({ name: records.name, categoryId: records.categoryId, recordCount: count() })
     .from(records)
     .where(isNotNull(records.name))
-    .groupBy(records.name)
+    .groupBy(records.name, records.categoryId)
   return mergeNameCandidates(
-    names.flatMap(({ name, recordCount }) => (name === null ? [] : [{ name, recordCount }])),
+    rows.flatMap(({ name, ...row }) => (name === null ? [] : [{ name, ...row }])),
   )
 }
 
