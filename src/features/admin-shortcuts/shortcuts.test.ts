@@ -32,17 +32,17 @@ describe('resolveShortcut', () => {
     expect(action).toBeNull()
   })
 
-  it('地図画面で / を押すと検索欄にフォーカスする', () => {
+  it('地図画面で f を押すと検索欄にフォーカスする', () => {
     // Act
-    const action = resolveShortcut({ key: '/', pathname: '/' })
+    const action = resolveShortcut({ key: 'f', pathname: '/' })
 
     // Assert
     expect(action).toEqual({ type: 'focus', elementId: RECORD_SEARCH_INPUT_ID })
   })
 
-  it('地図画面以外では / を使えない', () => {
+  it('地図画面以外では f を使えない', () => {
     // Act
-    const action = resolveShortcut({ key: '/', pathname: '/admin/records' })
+    const action = resolveShortcut({ key: 'f', pathname: '/admin/records' })
 
     // Assert
     expect(action).toBeNull()

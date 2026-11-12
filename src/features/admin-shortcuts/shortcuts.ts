@@ -18,7 +18,7 @@ export const SHORTCUT_DEFINITIONS: readonly ShortcutDefinition[] = [
   { key: 'c', description: 'カテゴリ' },
   { key: 'm', description: '地図' },
   { key: 'e', description: '表示中の記録を編集（記録の詳細画面）' },
-  { key: '/', description: '検索欄にフォーカス（地図画面）' },
+  { key: 'f', description: '検索欄にフォーカス（地図画面）' },
   { key: '⌘S / Ctrl+S', description: '保存（記録の追加・編集画面）' },
   { key: '?', description: 'ショートカットの一覧' },
 ]
@@ -51,7 +51,7 @@ export function resolveShortcut({
       const recordId = RECORD_DETAIL_PATH_PATTERN.exec(pathname)?.[1]
       return recordId ? { type: 'navigate', to: `/admin/records/${recordId}/edit` } : null
     }
-    case '/':
+    case 'f':
       return pathname === '/' ? { type: 'focus', elementId: RECORD_SEARCH_INPUT_ID } : null
     case '?':
       return { type: 'help' }
