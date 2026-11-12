@@ -13,7 +13,7 @@ paths:
 - コンポーネントは関数宣言（`function`）で定義すること
   - 例）`function ActivityCard({ activity }: ActivityCardProps) { ... }`
 - 1ファイルにつき1コンポーネントとすること
-  - ルートファイル（`web/src/routes/` 配下）は例外とし，そのルートの `component`・`notFoundComponent` などに渡すコンポーネントを同じファイルに定義してよい
+  - ルートファイル（`src/routes/` 配下）は例外とし，そのルートの `component`・`notFoundComponent` などに渡すコンポーネントを同じファイルに定義してよい
 - コンポーネント名はパスカルケース（`PascalCase`）で命名し，ファイル名もコンポーネント名と一致させること
 - コンポーネントが大きくなった場合は，責務ごとに小さいコンポーネントへ分割すること
 
