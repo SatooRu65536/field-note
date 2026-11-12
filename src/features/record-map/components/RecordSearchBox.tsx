@@ -13,6 +13,8 @@ import { placeSearchQueryOptions } from '@/integrations/gsi/placeSearch'
 import type { Place } from '@/integrations/gsi/placeSearch'
 import { FOCUS_ZOOM, MAP_TRANSITION_DURATION_MS } from '@/integrations/maplibre/constants'
 
+import { RECORD_SEARCH_INPUT_ID } from '@/features/admin-shortcuts'
+
 import { RECORD_MAP_ID } from '../constants'
 import { findNearestRecord } from '../nearestRecord'
 import { PlaceResultList } from './PlaceResultList'
@@ -134,6 +136,7 @@ export function RecordSearchBox({
         })}
       >
         <input
+          id={RECORD_SEARCH_INPUT_ID}
           type="search"
           aria-label={isAdmin ? '名前・タグ・地名で検索' : '名前・タグで検索'}
           placeholder={isAdmin ? '名前・タグ・地名で検索' : '名前・タグで検索'}
