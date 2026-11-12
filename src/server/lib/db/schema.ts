@@ -30,6 +30,8 @@ export const records = sqliteTable(
     discoveredAt: integer('discovered_at', { mode: 'timestamp_ms' }).notNull(),
     memo: text().notNull().default(''),
     isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
+    // 伝聞や痕跡だけで，実際には確認していない記録は false にする
+    isConfirmed: integer('is_confirmed', { mode: 'boolean' }).notNull().default(true),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),

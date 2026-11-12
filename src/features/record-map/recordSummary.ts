@@ -14,6 +14,7 @@ export function toRecordSummary(record: RecordDetail): RecordSummary {
     longitude: record.longitude,
     discoveredAt: record.discoveredAt,
     isPublic: record.isPublic,
+    isConfirmed: record.isConfirmed,
     thumbnailPhotoId: record.photoIds[0] ?? null,
   }
 }

@@ -11,6 +11,7 @@ const RECORD = {
   discoveredAt: new Date(2026, 10, 13),
   memo: '',
   isPublic: true,
+  isConfirmed: false,
   tags: [],
   nameMemo: '',
   photoIds: ['photo-1', 'photo-2'],
@@ -31,6 +32,7 @@ describe('toRecordSummary', () => {
       longitude: 136.88,
       discoveredAt: new Date(2026, 10, 13),
       isPublic: true,
+      isConfirmed: false,
       thumbnailPhotoId: 'photo-1',
     })
   })

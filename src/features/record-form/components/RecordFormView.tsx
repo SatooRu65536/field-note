@@ -215,6 +215,15 @@ export function RecordFormView({
         />
       </FormField>
 
+      <label className={css({ display: 'flex', alignItems: 'center', gap: '2' })}>
+        <input
+          type="checkbox"
+          checked={!values.isConfirmed}
+          onChange={(event) => updateValues({ isConfirmed: !event.target.checked })}
+        />
+        実際には確認していない（伝聞・痕跡などで，地図では「?」付きで表示）
+      </label>
+
       <FieldGroup legend="タグ">
         <TagField
           id="record-tags"

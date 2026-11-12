@@ -33,6 +33,7 @@ const PAYLOAD: RecordPayload = {
   longitude: 136.8971134,
   discoveredAt: new Date('2026-11-13T01:02:03.000Z'),
   memo: '公園の入口で拾った',
+  isConfirmed: false,
   tags: ['どんぐり', '秋'],
   nameMemo: 'ブナ科の落葉高木',
   photos: [],
@@ -66,6 +67,18 @@ describe('parseRecordFormData', () => {
 
     // Assert
     expect(result.ok && result.value.name).toBeNull()
+  })
+
+  it('確認したかどうかの指定がない場合は，確認した記録として扱う', () => {
+    // Arrange
+    const formData = createRecordFormData(PAYLOAD)
+    formData.delete('isConfirmed')
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok && result.value.isConfirmed).toBe(true)
   })
 
   it('タグを正規化する', () => {
@@ -158,6 +171,7 @@ describe('parseRecordFormData', () => {
     ['緯度が空', 'latitude', '', '発見場所を指定してください'],
     ['発見日時が日時でない', 'discoveredAt', '2026-13-01', '発見日時が不正です'],
     ['カテゴリが空', 'categoryId', '', 'カテゴリを選択してください'],
+    ['確認したかどうかが真偽値でない', 'isConfirmed', 'yes', '確認したかどうかが不正です'],
   ])('%s場合はエラーを返す', (_, key, value, error) => {
     // Arrange
     const formData = createRecordFormData(PAYLOAD)

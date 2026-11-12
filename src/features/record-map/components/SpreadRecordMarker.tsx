@@ -4,9 +4,9 @@ import { css } from 'styled-system/css'
 
 import { MapCircleMarker } from '@/components/ui/MapCircleMarker'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
-import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 
+import { createRecordLabel } from '../recordLabel'
 import type { PixelOffset } from '../spiderLayout'
 
 interface SpreadRecordMarkerProps {
@@ -52,7 +52,7 @@ export function SpreadRecordMarker({
       {/* キーボードで選べるようにするためのボタン．Enter で発生するクリックは Marker の onClick で受け取る */}
       <button
         type="button"
-        aria-label={formatRecordName(record.name)}
+        aria-label={createRecordLabel(record)}
         aria-pressed={isSelected}
         className={css({
           display: 'block',
@@ -65,6 +65,7 @@ export function SpreadRecordMarker({
           color={color}
           imageSrc={record.thumbnailPhotoId ? createPhotoUrl(record.thumbnailPhotoId) : undefined}
           isSelected={isSelected}
+          isUncertain={!record.isConfirmed}
         />
       </button>
     </Marker>

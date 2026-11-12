@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { css } from 'styled-system/css'
 
 import { DotLabel } from '@/components/ui/DotLabel'
+import { UncertainBadge } from '@/components/ui/UncertainBadge'
 import { buttonRecipe } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
@@ -64,7 +65,10 @@ export function RecordPreviewCard({ record, category, onClosed }: RecordPreviewC
             ×
           </button>
         </div>
-        {category && <DotLabel name={category.name} color={category.color} />}
+        <div className={css({ display: 'flex', alignItems: 'center', gap: '2', flexWrap: 'wrap' })}>
+          {category && <DotLabel name={category.name} color={category.color} />}
+          {!record.isConfirmed && <UncertainBadge />}
+        </div>
         <p className={css({ fontSize: 'sm', color: 'muted' })}>
           {formatDateTime(record.discoveredAt)}
         </p>

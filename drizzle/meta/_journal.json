@@ -50,6 +50,13 @@
       "when": 1794503996603,
       "tag": "0006_add_fish_category",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794507338469,
+      "tag": "0007_add_record_confirmation",
+      "breakpoints": true
     }
   ]
 }

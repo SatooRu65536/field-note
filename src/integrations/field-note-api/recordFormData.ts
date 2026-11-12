@@ -29,6 +29,8 @@ export interface RecordPayload {
   readonly longitude: number
   readonly discoveredAt: Date
   readonly memo: string
+  // 実際に確認した記録は true
+  readonly isConfirmed: boolean
   readonly tags: readonly string[]
   // 名前ごとのメモ．null の場合は変更しない
   readonly nameMemo: string | null
@@ -55,6 +57,7 @@ export function createRecordFormData(payload: RecordPayload): FormData {
   formData.set('longitude', String(payload.longitude))
   formData.set('discoveredAt', payload.discoveredAt.toISOString())
   formData.set('memo', payload.memo)
+  formData.set('isConfirmed', String(payload.isConfirmed))
   if (payload.nameMemo !== null) formData.set('nameMemo', payload.nameMemo)
   payload.tags.forEach((tag) => formData.append('tags', tag))
   payload.photos.forEach((photo) => formData.append('photos', photo))
@@ -94,6 +97,9 @@ const FIELDS_SCHEMA = z.object({
     .datetime({ offset: true, message: '発見日時が不正です' })
     .transform((value) => new Date(value)),
   memo: z.string().max(MAX_MEMO_LENGTH, `メモは ${MAX_MEMO_LENGTH} 文字以内で入力してください`),
+  isConfirmed: z
+    .enum(['true', 'false'], { message: '確認したかどうかが不正です' })
+    .transform((value) => value === 'true'),
   nameMemo: z
     .string()
     .trim()
@@ -165,6 +171,8 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
     longitude: getOptionalString({ formData, key: 'longitude' }) ?? '',
     discoveredAt: getOptionalString({ formData, key: 'discoveredAt' }) ?? '',
     memo: getOptionalString({ formData, key: 'memo' }) ?? '',
+    // 指定がない場合は，これまでの記録と同じく確認した記録として扱う
+    isConfirmed: getOptionalString({ formData, key: 'isConfirmed' }) ?? 'true',
     nameMemo: getOptionalString({ formData, key: 'nameMemo' }) ?? null,
     tags: formData.getAll('tags'),
     removedPhotoIds: formData.getAll('removedPhotoIds'),

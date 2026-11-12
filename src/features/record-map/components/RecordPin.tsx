@@ -5,8 +5,9 @@ import { css } from 'styled-system/css'
 import { MapPin } from '@/components/ui/MapPin'
 import { PhotoMapPin } from '@/components/ui/PhotoMapPin'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
-import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
+
+import { createRecordLabel } from '../recordLabel'
 
 interface RecordPinProps {
   readonly record: RecordSummary
@@ -39,7 +40,7 @@ export function RecordPin({ record, color, isSelected, onRecordSelected }: Recor
       {/* キーボードで選べるようにするためのボタン．Enter で発生するクリックは Marker の onClick で受け取る */}
       <button
         type="button"
-        aria-label={formatRecordName(record.name)}
+        aria-label={createRecordLabel(record)}
         aria-pressed={isSelected}
         className={css({
           display: 'block',
@@ -53,9 +54,10 @@ export function RecordPin({ record, color, isSelected, onRecordSelected }: Recor
             src={createPhotoUrl(record.thumbnailPhotoId)}
             color={color}
             isSelected={isSelected}
+            isUncertain={!record.isConfirmed}
           />
         ) : (
-          <MapPin color={color} isSelected={isSelected} />
+          <MapPin color={color} isSelected={isSelected} isUncertain={!record.isConfirmed} />
         )}
       </button>
     </Marker>

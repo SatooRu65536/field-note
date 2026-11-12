@@ -14,6 +14,8 @@ export interface RecordSummary {
   readonly longitude: number
   readonly discoveredAt: Date
   readonly isPublic: boolean
+  // 実際に確認した記録は true．伝聞や痕跡だけの記録は false
+  readonly isConfirmed: boolean
   readonly thumbnailPhotoId: string | null
 }
 
@@ -26,6 +28,7 @@ export interface RecordDetail {
   readonly discoveredAt: Date
   readonly memo: string
   readonly isPublic: boolean
+  readonly isConfirmed: boolean
   readonly tags: readonly string[]
   // 名前ごとのメモ．名前が分からない記録や，メモがない場合は空文字
   readonly nameMemo: string
@@ -42,6 +45,7 @@ export interface RecordInput {
   readonly longitude: number
   readonly discoveredAt: Date
   readonly memo: string
+  readonly isConfirmed: boolean
   readonly tags: readonly string[]
   // 名前ごとのメモ．null の場合は変更しない
   readonly nameMemo: string | null

@@ -3,6 +3,7 @@ import { css } from 'styled-system/css'
 
 import { Button } from '@/components/ui/Button'
 import { DotLabel } from '@/components/ui/DotLabel'
+import { UncertainBadge } from '@/components/ui/UncertainBadge'
 import { buttonRecipe } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
@@ -63,6 +64,7 @@ export function AdminRecordRow({
           <span className={css({ fontWeight: 'bold', truncate: true })}>
             {formatRecordName(record.name)}
           </span>
+          {!record.isConfirmed && <UncertainBadge />}
         </div>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '2', flexWrap: 'wrap' })}>
           {category && <DotLabel name={category.name} color={category.color} />}

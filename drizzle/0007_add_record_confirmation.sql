@@ -1,0 +1,1 @@
+ALTER TABLE `records` ADD `is_confirmed` integer DEFAULT true NOT NULL;

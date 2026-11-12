@@ -226,6 +226,7 @@ export async function createRecord({
               longitude: input.longitude,
               discoveredAt: input.discoveredAt,
               memo: input.memo,
+              isConfirmed: input.isConfirmed,
               // 記録はすべて一般公開する
               isPublic: true,
             }),
@@ -308,6 +309,7 @@ export async function updateRecord({
             longitude: input.longitude,
             discoveredAt: input.discoveredAt,
             memo: input.memo,
+            isConfirmed: input.isConfirmed,
             // 記録はすべて一般公開する
           isPublic: true,
             updatedAt: new Date(),

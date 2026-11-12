@@ -49,6 +49,7 @@ export function validateRecordFormValues({
       longitude: values.location.longitude,
       discoveredAt,
       memo: values.memo.trim(),
+      isConfirmed: values.isConfirmed,
       tags: values.tags,
       // 名前が分からない記録や，複数の名前をまとめて登録する場合は，名前ごとのメモを保存しない
       nameMemo: values.isNameUnknown || additionalNames.length > 0 ? null : values.nameMemo,

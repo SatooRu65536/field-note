@@ -28,6 +28,7 @@ const SUMMARY_COLUMNS = {
   longitude: records.longitude,
   discoveredAt: records.discoveredAt,
   isPublic: records.isPublic,
+  isConfirmed: records.isConfirmed,
   thumbnailPhotoId: THUMBNAIL_PHOTO_ID,
 }
 
@@ -171,6 +172,7 @@ export async function findRecord({
     discoveredAt: record.discoveredAt,
     memo: record.memo,
     isPublic: record.isPublic,
+    isConfirmed: record.isConfirmed,
     tags: tags.map(({ tag }) => tag),
     nameMemo,
     photoIds: photos.map(({ id }) => id),

@@ -2,6 +2,7 @@ import { css } from 'styled-system/css'
 import type { ReactNode } from 'react'
 
 import { DotLabel } from '@/components/ui/DotLabel'
+import { UncertainBadge } from '@/components/ui/UncertainBadge'
 import type { Category } from '@/integrations/field-note-api/categories'
 import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordDetail } from '@/integrations/field-note-api/records'
@@ -38,6 +39,7 @@ export function RecordDetailView({
         </div>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '3', flexWrap: 'wrap' })}>
           {category && <DotLabel name={category.name} color={category.color} />}
+          {!record.isConfirmed && <UncertainBadge />}
           <time
             dateTime={record.discoveredAt.toISOString()}
             className={css({ fontSize: 'sm', color: 'muted' })}

@@ -15,6 +15,7 @@ describe('createNewRecordFormValues', () => {
       location: null,
       discoveredAt: '2026-11-13T09:30',
       memo: '',
+      isConfirmed: true,
       tags: [],
       nameMemo: null,
       existingPhotoIds: [],
@@ -49,6 +50,7 @@ describe('createEditRecordFormValues', () => {
     tags: ['どんぐり'],
     nameMemo: 'ブナ科の落葉高木',
     isPublic: true,
+    isConfirmed: false,
     photoIds: ['photo-1'],
     updatedAt: new Date(2026, 10, 14),
   }
@@ -65,6 +67,7 @@ describe('createEditRecordFormValues', () => {
       location: { latitude: 35.18, longitude: 136.89 },
       discoveredAt: '2026-11-13T09:30',
       memo: '公園で拾った',
+      isConfirmed: false,
       tags: ['どんぐり'],
       nameMemo: null,
       existingPhotoIds: ['photo-1'],

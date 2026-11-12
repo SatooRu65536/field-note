@@ -1,13 +1,22 @@
 import { css } from 'styled-system/css'
 
+import { UncertainCornerMark } from './UncertainCornerMark'
+
 interface PhotoMapPinProps {
   readonly src: string
   // 写真の縁取りと，ピンの先端の色
   readonly color: string
   readonly isSelected?: boolean
+  // 不確かなものを示す場合は，縁取りを破線にして写真を薄くし，「?」を重ねる
+  readonly isUncertain?: boolean
 }
 
-export function PhotoMapPin({ src, color, isSelected = false }: PhotoMapPinProps) {
+export function PhotoMapPin({
+  src,
+  color,
+  isSelected = false,
+  isUncertain = false,
+}: PhotoMapPinProps) {
   return (
     <span
       aria-hidden="true"
@@ -32,7 +41,7 @@ export function PhotoMapPin({ src, color, isSelected = false }: PhotoMapPinProps
           borderWidth: '3px',
           borderStyle: 'solid',
         })}
-        style={{ borderColor: color }}
+        style={{ borderColor: color, borderStyle: isUncertain ? 'dashed' : 'solid', position: 'relative' }}
       >
         <img
           src={src}
@@ -47,7 +56,9 @@ export function PhotoMapPin({ src, color, isSelected = false }: PhotoMapPinProps
             borderRadius: 'full',
             bg: 'primary-muted',
           })}
+          style={{ opacity: isUncertain ? 0.6 : undefined }}
         />
+        {isUncertain && <UncertainCornerMark color={color} />}
       </span>
       <svg width="12" height="8" viewBox="0 0 12 8" className={css({ display: 'block', mt: '-1px' })}>
         <path d="M0 0h12L6 8z" fill={color} />
