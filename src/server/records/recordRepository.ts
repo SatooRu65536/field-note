@@ -12,10 +12,11 @@ import type { Bounds, RecordDetail, RecordSummary } from './types'
 const MAX_RECORDS_IN_BOUNDS = 500
 
 // 一覧のサムネイルに使う，表示順が最初の写真の ID
+// Drizzle は1つのテーブルからの select で列名をテーブル名なしで出力し，サブクエリ内では写真のテーブルの列と区別できなくなるため，テーブル名付きで書く
 const THUMBNAIL_PHOTO_ID = sql<string | null>`(
-  select ${recordPhotos.id} from ${recordPhotos}
-  where ${recordPhotos.recordId} = ${records.id}
-  order by ${recordPhotos.sortOrder} limit 1
+  select "record_photos"."id" from "record_photos"
+  where "record_photos"."record_id" = "records"."id"
+  order by "record_photos"."sort_order" limit 1
 )`
 
 const SUMMARY_COLUMNS = {
