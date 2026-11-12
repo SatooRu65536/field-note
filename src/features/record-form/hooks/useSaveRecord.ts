@@ -18,7 +18,7 @@ interface SaveRecord {
 }
 
 /**
- * 記録を登録・更新し，成功したら記録の一覧に移動する
+ * 記録を登録・更新し，成功したら追加後は地図に，編集後は記録の一覧に移動する
  * @returns 保存処理と，保存中・エラーの状態
  */
 export function useSaveRecord(): SaveRecord {
@@ -30,13 +30,14 @@ export function useSaveRecord(): SaveRecord {
       const data = createRecordFormData(payload)
       return payload.recordId ? updateAdminRecord({ data }) : createAdminRecord({ data })
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, payload) => {
       if (!result.ok) return
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.adminRecords }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.publicRecords }),
       ])
-      await navigate({ to: '/admin/records' })
+      // 追加した記録を地図で確かめられるよう，追加後は地図に，編集後は記録の一覧に戻る
+      await navigate({ to: payload.recordId ? '/admin/records' : '/' })
     },
   })
 
