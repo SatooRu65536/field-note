@@ -1,8 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
+import type { RecordSummary } from '@/integrations/field-note-api/records'
+
 import { calculateDistanceMeters, findNearestRecord } from './nearestRecord'
 
-function createRecord({ id, latitude, longitude }: { id: string; latitude: number; longitude: number }) {
+/**
+ * 指定した位置の記録を作成する
+ * @param id 記録の ID
+ * @param latitude 緯度
+ * @param longitude 経度
+ * @returns 記録
+ */
+function createRecord({
+  id,
+  latitude,
+  longitude,
+}: {
+  id: string
+  latitude: number
+  longitude: number
+}): RecordSummary {
   return {
     id,
     name: null,

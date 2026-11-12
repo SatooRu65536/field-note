@@ -78,3 +78,19 @@ describe('mergeNameCandidates のタグ', () => {
     expect(candidates[0]?.tags).toEqual(['秋', 'どんぐり'])
   })
 })
+
+describe('mergeNameCandidates のタグの絞り込み', () => {
+  it('同じ名前の記録の半数未満にしか付けられていないタグは推定に使わない', () => {
+    // Act
+    const candidates = mergeNameCandidates({
+      rows: [{ name: 'コナラ', categoryId: 'seed', recordCount: 4 }],
+      tagRows: [
+        { name: 'コナラ', tag: 'どんぐり', recordCount: 2 },
+        { name: 'コナラ', tag: '虫食い', recordCount: 1 },
+      ],
+    })
+
+    // Assert
+    expect(candidates[0]?.tags).toEqual(['どんぐり'])
+  })
+})

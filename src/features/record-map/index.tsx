@@ -1,4 +1,4 @@
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { ClientOnly, useNavigate } from '@tanstack/react-router'
 import { lazy, Suspense, useState } from 'react'
 import { MapProvider } from 'react-map-gl/maplibre'
@@ -32,11 +32,13 @@ export function RecordMap() {
   const { data: searchResults } = useQuery({
     ...publicRecordSearchQueryOptions({ query: searchQuery, categoryIds }),
     enabled: searchQuery !== '',
+    // カテゴリの切り替え中に結果が空に見えないよう，前の結果を表示し続ける
+    placeholderData: keepPreviousData,
   })
   const visibleSearchResults = searchQuery === '' ? null : (searchResults ?? [])
   const navigate = useNavigate()
 
-  async function handleLocationDoubleClick({ latitude, longitude }: Coordinates): Promise<void> {
+  async function handleLocationRightClick({ latitude, longitude }: Coordinates): Promise<void> {
     await navigate({ to: '/admin/records/new', search: { latitude, longitude } })
   }
 
@@ -77,8 +79,8 @@ export function RecordMap() {
             currentPosition={currentPosition}
             onRecordSelected={setSelectedRecord}
             onCurrentPositionRequested={refreshCurrentPosition}
-            // 管理者のみ，ダブルクリックした地点を発見場所にして記録を追加できる
-            onLocationDoubleClicked={isAdmin ? handleLocationDoubleClick : null}
+            // 管理者のみ，右クリックした地点を発見場所にして記録を追加できる
+            onLocationRightClicked={isAdmin ? handleLocationRightClick : null}
           />
         </Suspense>
       </ClientOnly>

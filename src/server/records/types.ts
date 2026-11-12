@@ -43,7 +43,6 @@ export interface RecordInput {
   readonly tags: readonly string[]
   // 名前ごとのメモ．null の場合は変更しない
   readonly nameMemo: string | null
-  readonly isPublic: boolean
   // 新たに追加する写真
   readonly photos: readonly File[]
 }

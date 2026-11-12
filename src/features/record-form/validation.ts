@@ -48,8 +48,6 @@ export function validateRecordFormValues({
       tags: values.tags,
       // 名前が分からない記録には名前ごとのメモを保存しない
       nameMemo: values.isNameUnknown ? null : values.nameMemo,
-      // 記録はすべて一般公開する
-      isPublic: true,
       photos: values.newPhotos.map(({ file }) => file),
       removedPhotoIds: values.removedPhotoIds,
     },

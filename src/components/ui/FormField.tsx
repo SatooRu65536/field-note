@@ -15,7 +15,11 @@ export function FormField({ label, htmlFor, hint, children }: FormFieldProps) {
         {label}
       </label>
       {children}
-      {hint && <p className={css({ fontSize: 'xs', color: 'muted' })}>{hint}</p>}
+      {hint && (
+        <p id={`${htmlFor}-hint`} className={css({ fontSize: 'xs', color: 'muted' })}>
+          {hint}
+        </p>
+      )}
     </div>
   )
 }

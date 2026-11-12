@@ -10,7 +10,6 @@ import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 import { formatDateTime } from '@/integrations/intl/formatDateTime'
 
-
 interface AdminRecordRowProps {
   readonly record: RecordSummary
   readonly category: Category | undefined

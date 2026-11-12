@@ -35,7 +35,6 @@ describe('validateRecordFormValues', () => {
         memo: '公園で拾った',
         tags: ['どんぐり'],
         nameMemo: 'ブナ科の落葉高木',
-        isPublic: true,
         photos: [],
         removedPhotoIds: ['photo-2'],
       },

@@ -12,9 +12,9 @@ export interface NewRecordSearch {
  * @returns 発見場所．緯度・経度の両方が有効な数値の場合のみ含める
  */
 export function parseNewRecordSearch(search: Record<string, unknown>): NewRecordSearch {
+  if (!isNumeric(search.latitude) || !isNumeric(search.longitude)) return {}
   const latitude = Number(search.latitude)
   const longitude = Number(search.longitude)
-  if (search.latitude === undefined || search.longitude === undefined) return {}
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return {}
   if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return {}
   return { latitude, longitude }
@@ -28,4 +28,14 @@ export function parseNewRecordSearch(search: Record<string, unknown>): NewRecord
 export function toInitialLocation(search: NewRecordSearch): Coordinates | null {
   if (search.latitude === undefined || search.longitude === undefined) return null
   return { latitude: search.latitude, longitude: search.longitude }
+}
+
+/**
+ * 検索パラメータの値が数値として解釈できるか判定する
+ * @param value 検索パラメータの値
+ * @returns 数値，または空でない数値の文字列の場合に true
+ */
+function isNumeric(value: unknown): boolean {
+  if (typeof value === 'number') return true
+  return typeof value === 'string' && value.trim() !== ''
 }

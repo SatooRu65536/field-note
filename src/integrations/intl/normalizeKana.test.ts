@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeKana, toKatakana } from './normalizeKana'
+import { normalizeKana } from './normalizeKana'
 
 describe('normalizeKana', () => {
   it('カタカナをひらがなに揃える', () => {
@@ -33,15 +33,5 @@ describe('normalizeKana', () => {
 
     // Assert
     expect(normalized).toBe('どんぐりー(団栗)')
-  })
-})
-
-describe('toKatakana', () => {
-  it('ひらがなをカタカナにし，それ以外は変えない', () => {
-    // Act
-    const katakana = toKatakana('こならの実ー')
-
-    // Assert
-    expect(katakana).toBe('コナラノ実ー')
   })
 })

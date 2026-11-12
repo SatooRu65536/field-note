@@ -34,8 +34,8 @@ interface RecordMapCanvasProps {
   readonly currentPosition: Coordinates | null
   readonly onRecordSelected: (record: RecordSummary | null) => void
   readonly onCurrentPositionRequested: () => Promise<Coordinates | null>
-  // ダブルクリックした地点を受け取る．null の場合はダブルクリックで地図を拡大する
-  readonly onLocationDoubleClicked: ((location: Coordinates) => void) | null
+  // 右クリックした地点を受け取る．null の場合は右クリックを受け付けない
+  readonly onLocationRightClicked: ((location: Coordinates) => void) | null
 }
 
 export function RecordMapCanvas({
@@ -46,7 +46,7 @@ export function RecordMapCanvas({
   currentPosition,
   onRecordSelected,
   onCurrentPositionRequested,
-  onLocationDoubleClicked,
+  onLocationRightClicked,
 }: RecordMapCanvasProps) {
   const { [RECORD_MAP_ID]: map } = useMap()
   const { data: mapStyle } = useSuspenseQuery(mapStyleQueryOptions())
@@ -68,9 +68,15 @@ export function RecordMapCanvas({
     })
   }, [map, currentPosition])
 
-  function handleDoubleClick(event: MapLayerMouseEvent): void {
-    if (!onLocationDoubleClicked) return
-    onLocationDoubleClicked({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })
+  function handleContextMenu(event: MapLayerMouseEvent): void {
+    if (!onLocationRightClicked) return
+    // ピンの右クリックも地図に伝わるため，ピンの上では記録を追加しない
+    const target = event.originalEvent.target
+    if (target instanceof Element && target.closest('.maplibregl-marker')) return
+    // ブラウザのコンテキストメニューを出さずに記録の追加画面へ移る
+    event.preventDefault()
+    event.originalEvent.preventDefault()
+    onLocationRightClicked({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })
   }
 
   return (
@@ -87,8 +93,9 @@ export function RecordMapCanvas({
         localIdeographFontFamily="sans-serif"
         attributionControl={{ compact: true }}
         onClick={() => onRecordSelected(null)}
-        doubleClickZoom={onLocationDoubleClicked === null}
-        onDblClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
+        // 右ボタンのドラッグによる回転と，右クリックでの記録の追加が重ならないよう，管理者はマウスで回転させない
+        dragRotate={onLocationRightClicked === null}
       >
         {currentPosition && <CurrentPositionMarker position={currentPosition} />}
         {records.map((record) => (

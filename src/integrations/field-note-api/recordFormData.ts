@@ -27,7 +27,6 @@ export interface RecordPayload {
   readonly tags: readonly string[]
   // 名前ごとのメモ．null の場合は変更しない
   readonly nameMemo: string | null
-  readonly isPublic: boolean
   readonly photos: readonly File[]
   readonly removedPhotoIds: readonly string[]
 }
@@ -52,7 +51,6 @@ export function createRecordFormData(payload: RecordPayload): FormData {
   formData.set('memo', payload.memo)
   if (payload.nameMemo !== null) formData.set('nameMemo', payload.nameMemo)
   payload.tags.forEach((tag) => formData.append('tags', tag))
-  formData.set('isPublic', String(payload.isPublic))
   payload.photos.forEach((photo) => formData.append('photos', photo))
   payload.removedPhotoIds.forEach((id) => formData.append('removedPhotoIds', id))
   return formData
@@ -98,9 +96,6 @@ const FIELDS_SCHEMA = z.object({
         )
         .max(MAX_TAG_COUNT, `タグは ${MAX_TAG_COUNT} 個までです`),
     ),
-  isPublic: z
-    .enum(['true', 'false'], { message: '公開設定が不正です' })
-    .transform((value) => value === 'true'),
   removedPhotoIds: z.array(z.string().min(1)).max(MAX_PHOTO_COUNT),
 })
 
@@ -156,7 +151,6 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
     memo: getOptionalString({ formData, key: 'memo' }) ?? '',
     nameMemo: getOptionalString({ formData, key: 'nameMemo' }) ?? null,
     tags: formData.getAll('tags'),
-    isPublic: getOptionalString({ formData, key: 'isPublic' }) ?? 'false',
     removedPhotoIds: formData.getAll('removedPhotoIds'),
   })
   if (!fields.success) {

@@ -32,6 +32,7 @@ export function RecordSearchBox({
   const queryClient = useQueryClient()
   const [input, setInput] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -42,10 +43,18 @@ export function RecordSearchBox({
     }
 
     setIsSearching(true)
-    const records = await queryClient.fetchQuery(
-      publicRecordSearchQueryOptions({ query, categoryIds }),
-    )
+    setError(null)
+    const records = await queryClient
+      .fetchQuery(publicRecordSearchQueryOptions({ query, categoryIds }))
+      .catch((searchError: unknown) => {
+        console.error('記録の検索に失敗しました', searchError)
+        return null
+      })
     setIsSearching(false)
+    if (!records) {
+      setError('検索に失敗しました．時間をおいて再度お試しください')
+      return
+    }
 
     // 検索した時点で見ていた場所から最も近い記録へ移動する
     const center = map?.getCenter()
@@ -94,6 +103,7 @@ export function RecordSearchBox({
           borderRadius: 'full',
           bg: 'white',
           boxShadow: 'floating',
+          _focusWithin: { outline: '2px solid', outlineColor: 'accent', outlineOffset: '2px' },
         })}
       >
         <input
@@ -132,6 +142,22 @@ export function RecordSearchBox({
           検索
         </button>
       </div>
+      {error && (
+        <p
+          role="alert"
+          className={css({
+            alignSelf: 'start',
+            px: '3',
+            py: '1',
+            borderRadius: 'full',
+            bg: 'danger-muted',
+            color: 'danger',
+            fontSize: 'xs',
+          })}
+        >
+          {error}
+        </p>
+      )}
       {resultCount !== null && (
         <p
           role="status"

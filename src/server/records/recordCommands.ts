@@ -203,7 +203,8 @@ export async function createRecord({
           longitude: input.longitude,
           discoveredAt: input.discoveredAt,
           memo: input.memo,
-          isPublic: input.isPublic,
+          // 記録はすべて一般公開する
+          isPublic: true,
         }),
         ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
         ...createNameMemoQueries({ db, input }),
@@ -279,7 +280,8 @@ export async function updateRecord({
             longitude: input.longitude,
             discoveredAt: input.discoveredAt,
             memo: input.memo,
-            isPublic: input.isPublic,
+            // 記録はすべて一般公開する
+          isPublic: true,
             updatedAt: new Date(),
           })
           .where(eq(records.id, recordId)),

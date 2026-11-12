@@ -18,7 +18,7 @@ export interface NameCandidate {
   readonly recordCount: number
   // 同じ名前の記録で最も多く使われたカテゴリ
   readonly categoryId: string
-  // 同じ名前の記録に付けられたタグ．使われた回数の多い順
+  // 同じ名前の記録の半数以上に付けられたタグ．使われた回数の多い順
   readonly tags: readonly string[]
 }
 
@@ -57,7 +57,7 @@ function sortByFrequency(
  * ひらがな・カタカナの違いだけの名前を1つにまとめ，記録の多い順に並べる
  * @param rows 名前とカテゴリの組ごとの記録の件数
  * @param tagRows 名前とタグの組ごとの記録の件数
- * @returns まとめた名前．表記と推定するカテゴリは最も多く使われたものにし，タグは使われた回数の多い順に並べる
+ * @returns まとめた名前．表記と推定するカテゴリは最も多く使われたものにし，タグは半数以上の記録に付けられたものを使われた回数の多い順に並べる
  */
 export function mergeNameCandidates({
   rows,
@@ -75,11 +75,10 @@ export function mergeNameCandidates({
       categoryId: findMostFrequent(
         group.map(({ categoryId, recordCount }) => ({ value: categoryId, recordCount })),
       ),
-      tags: sortByFrequency(
-        tagRows
-          .filter(({ name }) => normalizeKana(name) === nameKey)
-          .map(({ tag, recordCount }) => ({ value: tag, recordCount })),
-      ),
+      tags: selectFrequentTags({
+        tagRows: tagRows.filter(({ name }) => normalizeKana(name) === nameKey),
+        recordCount: group.reduce((total, { recordCount }) => total + recordCount, 0),
+      }),
     }
   })
   return [...merged].sort(compareByCount)
@@ -94,4 +93,27 @@ function findMostFrequent(
   rows: readonly { readonly value: string; readonly recordCount: number }[],
 ): string {
   return sortByFrequency(rows)[0] ?? ''
+}
+
+/**
+ * 同じ名前の記録の半数以上に付けられたタグを，使われた回数の多い順に選ぶ
+ * @param tagRows 同じ名前の記録のタグごとの件数
+ * @param recordCount 同じ名前の記録の件数
+ * @returns タグ
+ */
+function selectFrequentTags({
+  tagRows,
+  recordCount,
+}: {
+  tagRows: readonly NameTagCount[]
+  recordCount: number
+}): readonly string[] {
+  const rows = tagRows.map(({ tag, recordCount: count }) => ({ value: tag, recordCount: count }))
+  // 一度だけ付けたタグまで推定すると推定が多すぎるため，半数以上の記録に付けられたタグに絞る
+  return sortByFrequency(rows).filter((tag) => {
+    const tagCount = rows
+      .filter(({ value }) => value === tag)
+      .reduce((total, { recordCount: count }) => total + count, 0)
+    return tagCount * 2 >= recordCount
+  })
 }

@@ -118,5 +118,7 @@ export function publicRecordSearchQueryOptions({
   return queryOptions({
     queryKey: [...QUERY_KEYS.publicRecords, 'search', query, categoryIds],
     queryFn: () => searchPublicRecords({ data: { query, categoryIds: [...categoryIds] } }),
+    // 検索欄で取得した結果を地図の表示でそのまま使い，同じ検索を2回送らないようにする
+    staleTime: 60 * 1000,
   })
 }

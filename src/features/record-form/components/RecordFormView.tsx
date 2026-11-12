@@ -147,6 +147,7 @@ export function RecordFormView({
       >
         <select
           id="record-category"
+          aria-describedby={isCategoryInferred ? 'record-category-hint' : undefined}
           value={values.categoryId}
           onChange={(event) => handleCategoryChange(event.target.value)}
           className={INPUT_STYLES}

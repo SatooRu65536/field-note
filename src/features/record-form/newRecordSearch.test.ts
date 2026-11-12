@@ -15,6 +15,8 @@ describe('parseNewRecordSearch', () => {
     ['緯度がない', { longitude: 136 }],
     ['経度が数値でない', { latitude: 35, longitude: 'east' }],
     ['緯度が範囲外', { latitude: 90.1, longitude: 136 }],
+    ['緯度・経度が空文字', { latitude: '', longitude: '' }],
+    ['緯度が null', { latitude: null, longitude: 136 }],
     ['経度が範囲外', { latitude: 35, longitude: -180.1 }],
   ])('%s場合は発見場所を含めない', (_, value) => {
     // Act

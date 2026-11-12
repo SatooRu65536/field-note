@@ -33,7 +33,6 @@ const PAYLOAD: RecordPayload = {
   memo: '公園の入口で拾った',
   tags: ['どんぐり', '秋'],
   nameMemo: 'ブナ科の落葉高木',
-  isPublic: true,
   photos: [],
   removedPhotoIds: ['photo-1'],
 }
@@ -130,7 +129,6 @@ describe('parseRecordFormData', () => {
     ['緯度が空', 'latitude', '', '発見場所を指定してください'],
     ['発見日時が日時でない', 'discoveredAt', '2026-13-01', '発見日時が不正です'],
     ['カテゴリが空', 'categoryId', '', 'カテゴリを選択してください'],
-    ['公開設定が真偽値でない', 'isPublic', 'yes', '公開設定が不正です'],
   ])('%s場合はエラーを返す', (_, key, value, error) => {
     // Arrange
     const formData = createRecordFormData(PAYLOAD)
