@@ -16,6 +16,8 @@ export interface RecordSummary {
   readonly discoveredAt: Date | null
   readonly isPublic: boolean
   readonly thumbnailPhotoId: string | null
+  // 写真のない未発見の記録に表示する，同じ名前の記録の写真．それ以外の記録は null
+  readonly referencePhotoId: string | null
 }
 
 export interface RecordDetail {

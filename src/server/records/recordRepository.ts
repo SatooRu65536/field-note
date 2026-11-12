@@ -5,6 +5,7 @@ import { recordPhotos, records, recordTags } from '@/server/lib/db/schema'
 import { findNameMemo } from '@/server/names/nameMemoRepository'
 
 import { mergeNameCandidates } from './nameCandidates'
+import { attachReferencePhotos, needsReferencePhotos } from './referencePhotos'
 import { toDiscoveredAt, toRecordSummary } from './recordRows'
 import { matchesSearchQuery } from './searchMatching'
 import type { NameCandidate } from './nameCandidates'
@@ -31,6 +32,32 @@ const SUMMARY_COLUMNS = {
   isPublic: records.isPublic,
   isDiscovered: records.isDiscovered,
   thumbnailPhotoId: THUMBNAIL_PHOTO_ID,
+}
+
+/**
+ * 写真のない未発見の記録に，同じ名前の記録の写真を参考の写真として割り当てる
+ * @param db Drizzle のクライアント
+ * @param summaries 一覧用の記録
+ * @returns 参考の写真を割り当てた記録
+ */
+async function withReferencePhotos({
+  db,
+  summaries,
+}: {
+  db: Database
+  summaries: readonly RecordSummary[]
+}): Promise<readonly RecordSummary[]> {
+  if (!needsReferencePhotos(summaries)) return summaries
+  // 表記の違いを無視して同じ名前を探すため，名前のある記録の写真をまとめて取得してから照らし合わせる
+  const rows = await db
+    .select({ name: records.name, photoId: THUMBNAIL_PHOTO_ID })
+    .from(records)
+    .where(and(isNotNull(records.name), eq(records.isPublic, true)))
+    .orderBy(desc(records.discoveredAt))
+  const namePhotos = rows.flatMap(({ name, photoId }) =>
+    name !== null && photoId !== null ? [{ name, photoId }] : [],
+  )
+  return attachReferencePhotos({ summaries, namePhotos })
 }
 
 /**
@@ -68,7 +95,7 @@ export async function listRecordsInBounds({
     .where(and(...conditions))
     .orderBy(desc(records.discoveredAt))
     .limit(MAX_RECORDS_IN_BOUNDS)
-  return rows.map(toRecordSummary)
+  return withReferencePhotos({ db, summaries: rows.map(toRecordSummary) })
 }
 
 // 検索結果として一度に返す記録の上限．地図に表示しきれない件数を返さないようにする
@@ -111,7 +138,7 @@ export async function searchRecords({
       .innerJoin(records, eq(recordTags.recordId, records.id))
       .where(and(...conditions)),
   ])
-  return summaries
+  const matched = summaries
     .map(toRecordSummary)
     .filter((summary) =>
       matchesSearchQuery({
@@ -121,6 +148,7 @@ export async function searchRecords({
       }),
     )
     .slice(0, MAX_SEARCH_RESULTS)
+  return withReferencePhotos({ db, summaries: matched })
 }
 
 /**
@@ -130,7 +158,7 @@ export async function searchRecords({
  */
 export async function listAllRecords(db: Database): Promise<readonly RecordSummary[]> {
   const rows = await db.select(SUMMARY_COLUMNS).from(records).orderBy(desc(records.discoveredAt))
-  return rows.map(toRecordSummary)
+  return withReferencePhotos({ db, summaries: rows.map(toRecordSummary) })
 }
 
 /**

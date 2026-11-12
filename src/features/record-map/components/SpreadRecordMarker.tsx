@@ -6,6 +6,7 @@ import { MapCircleMarker } from '@/components/ui/MapCircleMarker'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 
+import { selectPinPhotoId } from '../pinPhoto'
 import { createRecordLabel } from '../recordLabel'
 import type { PixelOffset } from '../spiderLayout'
 
@@ -33,6 +34,8 @@ export function SpreadRecordMarker({
   offset,
   onRecordSelected,
 }: SpreadRecordMarkerProps) {
+  const photoId = selectPinPhotoId(record)
+
   function handleClick(event: MarkerEvent<MouseEvent>): void {
     // MapLibre は地図の要素でクリックを受け取るため，ネイティブのイベントの伝播を止めて選択の解除が走らないようにする
     event.originalEvent.stopPropagation()
@@ -63,7 +66,7 @@ export function SpreadRecordMarker({
       >
         <MapCircleMarker
           color={color}
-          imageSrc={record.thumbnailPhotoId ? createPhotoUrl(record.thumbnailPhotoId) : undefined}
+          imageSrc={photoId ? createPhotoUrl(photoId) : undefined}
           isSelected={isSelected}
           isUncertain={record.discoveredAt === null}
         />

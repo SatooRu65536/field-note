@@ -7,6 +7,7 @@ import { PhotoMapPin } from '@/components/ui/PhotoMapPin'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 
+import { selectPinPhotoId } from '../pinPhoto'
 import { createRecordLabel } from '../recordLabel'
 
 interface RecordPinProps {
@@ -20,6 +21,8 @@ interface RecordPinProps {
 const SELECTED_Z_INDEX = 1000000
 
 export function RecordPin({ record, color, isSelected, onRecordSelected }: RecordPinProps) {
+  const photoId = selectPinPhotoId(record)
+
   function handleClick(event: MarkerEvent<MouseEvent>): void {
     // MapLibre は地図の要素でクリックを受け取るため，ネイティブのイベントの伝播を止めて選択の解除が走らないようにする
     event.originalEvent.stopPropagation()
@@ -49,9 +52,9 @@ export function RecordPin({ record, color, isSelected, onRecordSelected }: Recor
           _focusVisible: { outline: '2px solid', outlineColor: 'accent', outlineOffset: '2px' },
         })}
       >
-        {record.thumbnailPhotoId ? (
+        {photoId ? (
           <PhotoMapPin
-            src={createPhotoUrl(record.thumbnailPhotoId)}
+            src={createPhotoUrl(photoId)}
             color={color}
             isSelected={isSelected}
             isUncertain={record.discoveredAt === null}

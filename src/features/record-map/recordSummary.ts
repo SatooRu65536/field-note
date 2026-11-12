@@ -15,5 +15,7 @@ export function toRecordSummary(record: RecordDetail): RecordSummary {
     discoveredAt: record.discoveredAt,
     isPublic: record.isPublic,
     thumbnailPhotoId: record.photoIds[0] ?? null,
+    // 詳細から開いた記録のカードには，同じ名前の記録の写真は使わない
+    referencePhotoId: null,
   }
 }

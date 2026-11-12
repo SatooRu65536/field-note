@@ -30,5 +30,10 @@ export function toDiscoveredAt(record: {
  * @returns 一覧用の記録．まだ発見していない記録は発見した日を null にする
  */
 export function toRecordSummary({ isDiscovered, discoveredAt, ...row }: RecordSummaryRow): RecordSummary {
-  return { ...row, discoveredAt: toDiscoveredAt({ discoveredAt, isDiscovered }) }
+  return {
+    ...row,
+    discoveredAt: toDiscoveredAt({ discoveredAt, isDiscovered }),
+    // 参考の写真は，一覧を取得した後に attachReferencePhotos で割り当てる
+    referencePhotoId: null,
+  }
 }

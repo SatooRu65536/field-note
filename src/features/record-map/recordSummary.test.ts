@@ -32,6 +32,7 @@ describe('toRecordSummary', () => {
       discoveredAt: new Date(2026, 10, 13),
       isPublic: true,
           thumbnailPhotoId: 'photo-1',
+      referencePhotoId: null,
     })
   })
 
