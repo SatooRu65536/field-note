@@ -5,7 +5,7 @@ import { createEditRecordFormValues, createNewRecordFormValues } from './initial
 describe('createNewRecordFormValues', () => {
   it('発見日時を指定した日時にし，その他の項目を未入力にする', () => {
     // Act
-    const values = createNewRecordFormValues(new Date(2026, 10, 13, 9, 30))
+    const values = createNewRecordFormValues({ now: new Date(2026, 10, 13, 9, 30), location: null })
 
     // Assert
     expect(values).toEqual({
@@ -22,6 +22,19 @@ describe('createNewRecordFormValues', () => {
       removedPhotoIds: [],
       newPhotos: [],
     })
+  })
+})
+
+describe('createNewRecordFormValues の発見場所', () => {
+  it('指定した発見場所を初期値にする', () => {
+    // Arrange
+    const location = { latitude: 35.18, longitude: 136.89 }
+
+    // Act
+    const values = createNewRecordFormValues({ now: new Date(2026, 10, 13), location })
+
+    // Assert
+    expect(values.location).toEqual(location)
   })
 })
 

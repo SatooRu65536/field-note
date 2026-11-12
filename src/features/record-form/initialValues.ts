@@ -1,4 +1,5 @@
 import type { RecordDetail } from '@/integrations/field-note-api/records'
+import type { Coordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 
 import { toDateTimeLocalValue } from './dateTimeLocal'
 import type { RecordFormValues } from './types'
@@ -6,14 +7,21 @@ import type { RecordFormValues } from './types'
 /**
  * 新規登録フォームの初期値を作成する
  * @param now 発見日時の初期値にする現在日時
+ * @param location 発見場所の初期値．指定しない場合は null
  * @returns フォームの初期値
  */
-export function createNewRecordFormValues(now: Date): RecordFormValues {
+export function createNewRecordFormValues({
+  now,
+  location,
+}: {
+  now: Date
+  location: Coordinates | null
+}): RecordFormValues {
   return {
     name: '',
     isNameUnknown: false,
     categoryId: '',
-    location: null,
+    location,
     discoveredAt: toDateTimeLocalValue(now),
     memo: '',
     tags: [],

@@ -1,11 +1,14 @@
-import { ClientOnly } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { ClientOnly, useNavigate } from '@tanstack/react-router'
 import { lazy, Suspense, useState } from 'react'
 import { MapProvider } from 'react-map-gl/maplibre'
 
+import { adminStatusQueryOptions } from '@/integrations/field-note-api/adminStatus'
 import { categoriesQueryOptions } from '@/integrations/field-note-api/categories'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
+import type { Coordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 
+import { AddRecordHint } from './components/AddRecordHint'
 import { CategoryFilter } from './components/CategoryFilter'
 import { RecordMapPlaceholder } from './components/RecordMapPlaceholder'
 import { RecordPreviewCard } from './components/RecordPreviewCard'
@@ -23,6 +26,12 @@ export function RecordMap() {
   const [categoryIds, setCategoryIds] = useState<readonly string[]>([])
   const [selectedRecord, setSelectedRecord] = useState<RecordSummary | null>(null)
   const { currentPosition, refreshCurrentPosition } = useCurrentPosition()
+  const { data: isAdmin = false } = useQuery(adminStatusQueryOptions())
+  const navigate = useNavigate()
+
+  async function handleLocationDoubleClick({ latitude, longitude }: Coordinates): Promise<void> {
+    await navigate({ to: '/admin/records/new', search: { latitude, longitude } })
+  }
 
   function handleCategoryToggle(categoryId: string): void {
     setCategoryIds((current) =>
@@ -44,6 +53,8 @@ export function RecordMap() {
             currentPosition={currentPosition}
             onRecordSelected={setSelectedRecord}
             onCurrentPositionRequested={refreshCurrentPosition}
+            // 管理者のみ，ダブルクリックした地点を発見場所にして記録を追加できる
+            onLocationDoubleClicked={isAdmin ? handleLocationDoubleClick : null}
           />
         </Suspense>
       </ClientOnly>
@@ -52,6 +63,7 @@ export function RecordMap() {
         selectedCategoryIds={categoryIds}
         onCategoryToggled={handleCategoryToggle}
       />
+      {isAdmin && !selectedRecord && <AddRecordHint />}
       {selectedRecord && (
         <RecordPreviewCard
           record={selectedRecord}

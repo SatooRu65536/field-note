@@ -3,6 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Map, useMap } from 'react-map-gl/maplibre'
+import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { css } from 'styled-system/css'
 
 import type { Category } from '@/integrations/field-note-api/categories'
@@ -31,6 +32,8 @@ interface RecordMapCanvasProps {
   readonly currentPosition: Coordinates | null
   readonly onRecordSelected: (record: RecordSummary | null) => void
   readonly onCurrentPositionRequested: () => Promise<Coordinates | null>
+  // ダブルクリックした地点を受け取る．null の場合はダブルクリックで地図を拡大する
+  readonly onLocationDoubleClicked: ((location: Coordinates) => void) | null
 }
 
 export function RecordMapCanvas({
@@ -40,6 +43,7 @@ export function RecordMapCanvas({
   currentPosition,
   onRecordSelected,
   onCurrentPositionRequested,
+  onLocationDoubleClicked,
 }: RecordMapCanvasProps) {
   const { [RECORD_MAP_ID]: map } = useMap()
   const { data: mapStyle } = useSuspenseQuery(mapStyleQueryOptions())
@@ -60,6 +64,11 @@ export function RecordMapCanvas({
     })
   }, [map, currentPosition])
 
+  function handleDoubleClick(event: MapLayerMouseEvent): void {
+    if (!onLocationDoubleClicked) return
+    onLocationDoubleClicked({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })
+  }
+
   return (
     <div className={css({ position: 'absolute', inset: '0' })}>
       <Map
@@ -74,6 +83,8 @@ export function RecordMapCanvas({
         localIdeographFontFamily="sans-serif"
         attributionControl={{ compact: true }}
         onClick={() => onRecordSelected(null)}
+        doubleClickZoom={onLocationDoubleClicked === null}
+        onDblClick={handleDoubleClick}
       >
         {currentPosition && <CurrentPositionMarker position={currentPosition} />}
         {records.map((record) => (

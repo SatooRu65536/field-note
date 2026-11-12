@@ -11,8 +11,17 @@ import { RecordFormNotFound } from './components/RecordFormNotFound'
 import { RecordFormView } from './components/RecordFormView'
 import { useRecordFormSubmission } from './hooks/useRecordFormSubmission'
 import { createEditRecordFormValues, createNewRecordFormValues } from './initialValues'
+import { toInitialLocation } from './newRecordSearch'
+import type { NewRecordSearch } from './newRecordSearch'
 
-export function NewRecordForm() {
+export { parseNewRecordSearch } from './newRecordSearch'
+export type { NewRecordSearch }
+
+interface NewRecordFormProps {
+  readonly search: NewRecordSearch
+}
+
+export function NewRecordForm({ search }: NewRecordFormProps) {
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions())
   const { data: nameCandidates } = useSuspenseQuery(nameCandidatesQueryOptions())
   const { data: tagCandidates } = useSuspenseQuery(tagCandidatesQueryOptions())
@@ -21,7 +30,10 @@ export function NewRecordForm() {
   return (
     <RecordFormView
       title="記録を追加"
-      initialValues={createNewRecordFormValues(new Date())}
+      initialValues={createNewRecordFormValues({
+        now: new Date(),
+        location: toInitialLocation(search),
+      })}
       categories={categories}
       nameCandidates={nameCandidates.names}
       nameMemos={nameCandidates.memos}
