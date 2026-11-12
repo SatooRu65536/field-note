@@ -19,6 +19,7 @@ const RecordLocationMap = lazy(() =>
 )
 
 export { RecordNotFound }
+export { createRecordOgp } from './recordOgp'
 
 interface RecordDetailProps {
   readonly recordId: string

@@ -6,7 +6,9 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
+import { SITE_DESCRIPTION, SITE_NAME, SITE_OGP_IMAGE_PATH } from '@/constants/site'
 import { AdminShortcuts } from '@/features/admin-shortcuts'
+import { createOgpMeta } from '@/integrations/ogp/createOgpMeta'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -28,13 +30,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
       },
-      {
-        title: 'Field Note',
-      },
-      {
-        name: 'description',
-        content: '現実世界で発見した自然物を，地図上に記録・共有する',
-      },
+      // 個々のページで上書きしない限り，サイト全体の OGP を使う
+      ...createOgpMeta({
+        title: SITE_NAME,
+        description: SITE_DESCRIPTION,
+        path: '/',
+        imagePath: SITE_OGP_IMAGE_PATH,
+        type: 'website',
+      }),
     ],
     links: [
       {
