@@ -27,7 +27,6 @@ export async function createCategory({
 }): Promise<CategoryCommandResult> {
   const [sortOrder] = await db.select({ value: max(categories.sortOrder) }).from(categories)
   await db.insert(categories).values({
-    id: crypto.randomUUID(),
     name,
     color,
     sortOrder: (sortOrder?.value ?? 0) + 1,
