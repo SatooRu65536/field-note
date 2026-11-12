@@ -6,8 +6,8 @@ import { UncertainBadge } from '@/components/ui/UncertainBadge'
 import type { Category } from '@/integrations/field-note-api/categories'
 import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordDetail } from '@/integrations/field-note-api/records'
-import { formatDateTime } from '@/integrations/intl/formatDateTime'
 
+import { DiscoveredDate } from './DiscoveredDate'
 import { EditRecordLink } from './EditRecordLink'
 import { PhotoGallery } from './PhotoGallery'
 
@@ -39,13 +39,11 @@ export function RecordDetailView({
         </div>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '3', flexWrap: 'wrap' })}>
           {category && <DotLabel name={category.name} color={category.color} />}
-          {!record.isConfirmed && <UncertainBadge />}
-          <time
-            dateTime={record.discoveredAt.toISOString()}
-            className={css({ fontSize: 'sm', color: 'muted' })}
-          >
-            {formatDateTime(record.discoveredAt)} に発見
-          </time>
+          {record.discoveredAt ? (
+            <DiscoveredDate discoveredAt={record.discoveredAt} />
+          ) : (
+            <UncertainBadge label="未発見" />
+          )}
         </div>
       </header>
 

@@ -62,7 +62,7 @@ export function EditRecordForm({ recordId }: EditRecordFormProps) {
     <RecordFormView
       title="記録を編集"
       canRegisterMultiple={false}
-      initialValues={createEditRecordFormValues(record)}
+      initialValues={createEditRecordFormValues({ record, now: new Date() })}
       categories={categories}
       nameCandidates={nameCandidates.names}
       nameMemos={nameCandidates.memos}

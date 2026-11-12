@@ -5,10 +5,10 @@ import { DotLabel } from '@/components/ui/DotLabel'
 import { UncertainBadge } from '@/components/ui/UncertainBadge'
 import { buttonRecipe } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
+import { formatDiscoveredAt } from '@/integrations/field-note-api/discoveredAt'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
 import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
-import { formatDateTime } from '@/integrations/intl/formatDateTime'
 
 interface RecordPreviewCardProps {
   readonly record: RecordSummary
@@ -67,10 +67,10 @@ export function RecordPreviewCard({ record, category, onClosed }: RecordPreviewC
         </div>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '2', flexWrap: 'wrap' })}>
           {category && <DotLabel name={category.name} color={category.color} />}
-          {!record.isConfirmed && <UncertainBadge />}
+          {record.discoveredAt === null && <UncertainBadge label="未発見" />}
         </div>
         <p className={css({ fontSize: 'sm', color: 'muted' })}>
-          {formatDateTime(record.discoveredAt)}
+          {formatDiscoveredAt(record.discoveredAt)}
         </p>
         <Link
           to="/records/$recordId"

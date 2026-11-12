@@ -54,10 +54,10 @@ export function RecordPin({ record, color, isSelected, onRecordSelected }: Recor
             src={createPhotoUrl(record.thumbnailPhotoId)}
             color={color}
             isSelected={isSelected}
-            isUncertain={!record.isConfirmed}
+            isUncertain={record.discoveredAt === null}
           />
         ) : (
-          <MapPin color={color} isSelected={isSelected} isUncertain={!record.isConfirmed} />
+          <MapPin color={color} isSelected={isSelected} isUncertain={record.discoveredAt === null} />
         )}
       </button>
     </Marker>

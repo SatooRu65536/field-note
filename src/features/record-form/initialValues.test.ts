@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createEditRecordFormValues, createNewRecordFormValues } from './initialValues'
 
 describe('createNewRecordFormValues', () => {
-  it('発見日時を指定した日時にし，その他の項目を未入力にする', () => {
+  it('発見日を指定した日にし，その他の項目を未入力にする', () => {
     // Act
     const values = createNewRecordFormValues({ now: new Date(2026, 10, 13, 9, 30), location: null })
 
@@ -13,9 +13,9 @@ describe('createNewRecordFormValues', () => {
       isNameUnknown: false,
       categoryId: '',
       location: null,
-      discoveredAt: '2026-11-13T09:30',
+      discoveredAt: '2026-11-13',
+      isUndiscovered: false,
       memo: '',
-      isConfirmed: true,
       tags: [],
       nameMemo: null,
       existingPhotoIds: [],
@@ -39,6 +39,8 @@ describe('createNewRecordFormValues の発見場所', () => {
 })
 
 describe('createEditRecordFormValues', () => {
+  const NOW = new Date(2026, 10, 20)
+
   const RECORD = {
     id: 'record-1',
     name: 'コナラ',
@@ -50,14 +52,13 @@ describe('createEditRecordFormValues', () => {
     tags: ['どんぐり'],
     nameMemo: 'ブナ科の落葉高木',
     isPublic: true,
-    isConfirmed: false,
     photoIds: ['photo-1'],
     updatedAt: new Date(2026, 10, 14),
   }
 
   it('登録済みの記録の内容を入力済みにする', () => {
     // Act
-    const values = createEditRecordFormValues(RECORD)
+    const values = createEditRecordFormValues({ record: RECORD, now: NOW })
 
     // Assert
     expect(values).toEqual({
@@ -65,9 +66,9 @@ describe('createEditRecordFormValues', () => {
       isNameUnknown: false,
       categoryId: 'seed',
       location: { latitude: 35.18, longitude: 136.89 },
-      discoveredAt: '2026-11-13T09:30',
+      discoveredAt: '2026-11-13',
+      isUndiscovered: false,
       memo: '公園で拾った',
-      isConfirmed: false,
       tags: ['どんぐり'],
       nameMemo: null,
       existingPhotoIds: ['photo-1'],
@@ -78,10 +79,19 @@ describe('createEditRecordFormValues', () => {
 
   it('名前が分からない記録は名前を空にし，名前が分からないを選択済みにする', () => {
     // Act
-    const values = createEditRecordFormValues({ ...RECORD, name: null })
+    const values = createEditRecordFormValues({ record: { ...RECORD, name: null }, now: NOW })
 
     // Assert
     expect(values.name).toBe('')
     expect(values.isNameUnknown).toBe(true)
+  })
+
+  it('未発見の記録は未発見を選択済みにし，発見日の入力欄には今日を入れる', () => {
+    // Act
+    const values = createEditRecordFormValues({ record: { ...RECORD, discoveredAt: null }, now: NOW })
+
+    // Assert
+    expect(values.isUndiscovered).toBe(true)
+    expect(values.discoveredAt).toBe('2026-11-20')
   })
 })

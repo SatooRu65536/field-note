@@ -1,6 +1,6 @@
 import type { RecordPayload } from '@/integrations/field-note-api/recordFormData'
 
-import { parseDateTimeLocalValue } from './dateTimeLocal'
+import { parseDateInputValue } from './dateInput'
 import { splitRecordNames } from './recordNames'
 import type { RecordFormValues } from './types'
 
@@ -33,9 +33,9 @@ export function validateRecordFormValues({
   if (!values.location) {
     return { ok: false, error: '発見場所を指定してください' }
   }
-  const discoveredAt = parseDateTimeLocalValue(values.discoveredAt)
-  if (!discoveredAt) {
-    return { ok: false, error: '発見日時を入力してください' }
+  const discoveredAt = values.isUndiscovered ? null : parseDateInputValue(values.discoveredAt)
+  if (!values.isUndiscovered && !discoveredAt) {
+    return { ok: false, error: '発見日を入力するか，「未発見」を選択してください' }
   }
 
   return {
@@ -49,7 +49,6 @@ export function validateRecordFormValues({
       longitude: values.location.longitude,
       discoveredAt,
       memo: values.memo.trim(),
-      isConfirmed: values.isConfirmed,
       tags: values.tags,
       // 名前が分からない記録や，複数の名前をまとめて登録する場合は，名前ごとのメモを保存しない
       nameMemo: values.isNameUnknown || additionalNames.length > 0 ? null : values.nameMemo,

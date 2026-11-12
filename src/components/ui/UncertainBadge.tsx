@@ -1,6 +1,10 @@
 import { css } from 'styled-system/css'
 
-export function UncertainBadge() {
+interface UncertainBadgeProps {
+  readonly label: string
+}
+
+export function UncertainBadge({ label }: UncertainBadgeProps) {
   return (
     <span
       className={css({
@@ -19,7 +23,7 @@ export function UncertainBadge() {
         whiteSpace: 'nowrap',
       })}
     >
-      ? 未確認
+      ? {label}
     </span>
   )
 }

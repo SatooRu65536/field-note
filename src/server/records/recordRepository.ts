@@ -5,6 +5,7 @@ import { recordPhotos, records, recordTags } from '@/server/lib/db/schema'
 import { findNameMemo } from '@/server/names/nameMemoRepository'
 
 import { mergeNameCandidates } from './nameCandidates'
+import { toDiscoveredAt, toRecordSummary } from './recordRows'
 import { matchesSearchQuery } from './searchMatching'
 import type { NameCandidate } from './nameCandidates'
 import type { Bounds, RecordDetail, RecordSummary } from './types'
@@ -28,12 +29,12 @@ const SUMMARY_COLUMNS = {
   longitude: records.longitude,
   discoveredAt: records.discoveredAt,
   isPublic: records.isPublic,
-  isConfirmed: records.isConfirmed,
+  isDiscovered: records.isDiscovered,
   thumbnailPhotoId: THUMBNAIL_PHOTO_ID,
 }
 
 /**
- * 指定した範囲内の記録を発見日時の新しい順に取得する
+ * 指定した範囲内の記録を発見日の新しい順に取得する
  * @param db Drizzle のクライアント
  * @param bounds 取得する範囲
  * @param categoryIds 絞り込むカテゴリ．空の場合は全カテゴリ
@@ -61,19 +62,20 @@ export async function listRecordsInBounds({
     includePrivate ? undefined : eq(records.isPublic, true),
   ]
 
-  return db
+  const rows = await db
     .select(SUMMARY_COLUMNS)
     .from(records)
     .where(and(...conditions))
     .orderBy(desc(records.discoveredAt))
     .limit(MAX_RECORDS_IN_BOUNDS)
+  return rows.map(toRecordSummary)
 }
 
 // 検索結果として一度に返す記録の上限．地図に表示しきれない件数を返さないようにする
 const MAX_SEARCH_RESULTS = 1000
 
 /**
- * 名前またはタグに検索語を含む記録を，ひらがな・カタカナなどの表記の違いを無視して発見日時の新しい順に取得する
+ * 名前またはタグに検索語を含む記録を，ひらがな・カタカナなどの表記の違いを無視して発見日の新しい順に取得する
  * @param db Drizzle のクライアント
  * @param query 検索語
  * @param categoryIds 絞り込むカテゴリ．空の場合は全カテゴリ
@@ -110,6 +112,7 @@ export async function searchRecords({
       .where(and(...conditions)),
   ])
   return summaries
+    .map(toRecordSummary)
     .filter((summary) =>
       matchesSearchQuery({
         name: summary.name,
@@ -121,12 +124,13 @@ export async function searchRecords({
 }
 
 /**
- * すべての記録を発見日時の新しい順に取得する
+ * すべての記録を発見日の新しい順に取得する
  * @param db Drizzle のクライアント
  * @returns 非公開を含む記録の一覧
  */
 export async function listAllRecords(db: Database): Promise<readonly RecordSummary[]> {
-  return db.select(SUMMARY_COLUMNS).from(records).orderBy(desc(records.discoveredAt))
+  const rows = await db.select(SUMMARY_COLUMNS).from(records).orderBy(desc(records.discoveredAt))
+  return rows.map(toRecordSummary)
 }
 
 /**
@@ -169,10 +173,9 @@ export async function findRecord({
     categoryId: record.categoryId,
     latitude: record.latitude,
     longitude: record.longitude,
-    discoveredAt: record.discoveredAt,
+    discoveredAt: toDiscoveredAt(record),
     memo: record.memo,
     isPublic: record.isPublic,
-    isConfirmed: record.isConfirmed,
     tags: tags.map(({ tag }) => tag),
     nameMemo,
     photoIds: photos.map(({ id }) => id),

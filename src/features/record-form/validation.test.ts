@@ -8,9 +8,9 @@ const VALUES: RecordFormValues = {
   isNameUnknown: false,
   categoryId: 'seed',
   location: { latitude: 35.18, longitude: 136.89 },
-  discoveredAt: '2026-11-13T09:30',
+  discoveredAt: '2026-11-13',
+  isUndiscovered: false,
   memo: ' 公園で拾った \n',
-  isConfirmed: false,
   tags: ['どんぐり'],
   nameMemo: 'ブナ科の落葉高木',
   existingPhotoIds: ['photo-1', 'photo-2'],
@@ -33,10 +33,9 @@ describe('validateRecordFormValues', () => {
         categoryId: 'seed',
         latitude: 35.18,
         longitude: 136.89,
-        discoveredAt: new Date(2026, 10, 13, 9, 30),
+        discoveredAt: new Date(2026, 10, 13),
         memo: '公園で拾った',
-        isConfirmed: false,
-        tags: ['どんぐり'],
+              tags: ['どんぐり'],
         nameMemo: 'ブナ科の落葉高木',
         photos: [],
         removedPhotoIds: ['photo-2'],
@@ -97,12 +96,23 @@ describe('validateRecordFormValues', () => {
     })
   })
 
+  it('未発見の場合は発見日を null にし，発見日の入力欄は使わない', () => {
+    // Arrange
+    const values = { ...VALUES, discoveredAt: '', isUndiscovered: true }
+
+    // Act
+    const result = validateRecordFormValues({ values, recordId: undefined })
+
+    // Assert
+    expect(result.ok && result.value.discoveredAt).toBeNull()
+  })
+
   it.each<[string, Partial<RecordFormValues>]>([
     ['名前が空で名前が分からないも選ばれていない', { name: '  ' }],
     ['名前が区切り文字だけ', { name: '，，' }],
     ['カテゴリが未選択', { categoryId: '' }],
     ['発見場所が未指定', { location: null }],
-    ['発見日時が未入力', { discoveredAt: '' }],
+    ['発見日が未入力で未発見も選ばれていない', { discoveredAt: '' }],
   ])('%sの場合はエラーを返す', (_, override) => {
     // Arrange
     const values = { ...VALUES, ...override }

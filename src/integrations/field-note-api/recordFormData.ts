@@ -27,10 +27,9 @@ export interface RecordPayload {
   readonly categoryId: string
   readonly latitude: number
   readonly longitude: number
-  readonly discoveredAt: Date
+  // 発見した日．まだ発見していない場合は null
+  readonly discoveredAt: Date | null
   readonly memo: string
-  // 実際に確認した記録は true
-  readonly isConfirmed: boolean
   readonly tags: readonly string[]
   // 名前ごとのメモ．null の場合は変更しない
   readonly nameMemo: string | null
@@ -55,9 +54,9 @@ export function createRecordFormData(payload: RecordPayload): FormData {
   formData.set('categoryId', payload.categoryId)
   formData.set('latitude', String(payload.latitude))
   formData.set('longitude', String(payload.longitude))
-  formData.set('discoveredAt', payload.discoveredAt.toISOString())
+  // 未発見の場合は空にする
+  formData.set('discoveredAt', payload.discoveredAt?.toISOString() ?? '')
   formData.set('memo', payload.memo)
-  formData.set('isConfirmed', String(payload.isConfirmed))
   if (payload.nameMemo !== null) formData.set('nameMemo', payload.nameMemo)
   payload.tags.forEach((tag) => formData.append('tags', tag))
   payload.photos.forEach((photo) => formData.append('photos', photo))
@@ -69,6 +68,8 @@ export function createRecordFormData(payload: RecordPayload): FormData {
 const MAX_RAW_TAG_COUNT = 100
 
 const COORDINATE_SCHEMA = z.string().trim().min(1, '発見場所を指定してください').pipe(z.coerce.number())
+
+const DATE_TIME_SCHEMA = z.iso.datetime({ offset: true })
 
 const FIELDS_SCHEMA = z.object({
   recordId: z.string().min(1).optional(),
@@ -93,13 +94,16 @@ const FIELDS_SCHEMA = z.object({
   longitude: COORDINATE_SCHEMA.pipe(
     z.number().min(-180, '経度は -180 から 180 の範囲で指定してください').max(180, '経度は -180 から 180 の範囲で指定してください'),
   ),
-  discoveredAt: z.iso
-    .datetime({ offset: true, message: '発見日時が不正です' })
-    .transform((value) => new Date(value)),
+  discoveredAt: z.string().transform((value, context) => {
+    // まだ発見していない記録は発見した日を持たない
+    if (value === '') return null
+    if (!DATE_TIME_SCHEMA.safeParse(value).success) {
+      context.addIssue({ code: 'custom', message: '発見日が不正です' })
+      return z.NEVER
+    }
+    return new Date(value)
+  }),
   memo: z.string().max(MAX_MEMO_LENGTH, `メモは ${MAX_MEMO_LENGTH} 文字以内で入力してください`),
-  isConfirmed: z
-    .enum(['true', 'false'], { message: '確認したかどうかが不正です' })
-    .transform((value) => value === 'true'),
   nameMemo: z
     .string()
     .trim()
@@ -171,8 +175,6 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
     longitude: getOptionalString({ formData, key: 'longitude' }) ?? '',
     discoveredAt: getOptionalString({ formData, key: 'discoveredAt' }) ?? '',
     memo: getOptionalString({ formData, key: 'memo' }) ?? '',
-    // 指定がない場合は，これまでの記録と同じく確認した記録として扱う
-    isConfirmed: getOptionalString({ formData, key: 'isConfirmed' }) ?? 'true',
     nameMemo: getOptionalString({ formData, key: 'nameMemo' }) ?? null,
     tags: formData.getAll('tags'),
     removedPhotoIds: formData.getAll('removedPhotoIds'),

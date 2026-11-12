@@ -187,15 +187,26 @@ export function RecordFormView({
         </select>
       </FormField>
 
-      <FormField label="発見日時" htmlFor="record-discovered-at">
-        <input
-          id="record-discovered-at"
-          type="datetime-local"
-          value={values.discoveredAt}
-          onChange={(event) => updateValues({ discoveredAt: event.target.value })}
-          className={INPUT_STYLES}
-        />
-      </FormField>
+      <FieldGroup legend="発見日">
+        {!values.isUndiscovered && (
+          <input
+            id="record-discovered-at"
+            type="date"
+            aria-label="発見日"
+            value={values.discoveredAt}
+            onChange={(event) => updateValues({ discoveredAt: event.target.value })}
+            className={INPUT_STYLES}
+          />
+        )}
+        <label className={css({ display: 'flex', alignItems: 'center', gap: '2', fontSize: 'sm' })}>
+          <input
+            type="checkbox"
+            checked={values.isUndiscovered}
+            onChange={(event) => updateValues({ isUndiscovered: event.target.checked })}
+          />
+          未発見（地図では「?」付きで表示）
+        </label>
+      </FieldGroup>
 
       <FieldGroup legend="発見場所">
         <LocationField
@@ -215,14 +226,6 @@ export function RecordFormView({
         />
       </FormField>
 
-      <label className={css({ display: 'flex', alignItems: 'center', gap: '2' })}>
-        <input
-          type="checkbox"
-          checked={!values.isConfirmed}
-          onChange={(event) => updateValues({ isConfirmed: !event.target.checked })}
-        />
-        実際には確認していない（伝聞・痕跡などで，地図では「?」付きで表示）
-      </label>
 
       <FieldGroup legend="タグ">
         <TagField

@@ -28,7 +28,6 @@ function createRecord({
     longitude,
     discoveredAt: new Date(2026, 10, 13),
     isPublic: true,
-    isConfirmed: true,
     thumbnailPhotoId: null,
   }
 }

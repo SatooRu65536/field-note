@@ -224,9 +224,10 @@ export async function createRecord({
               categoryId: input.categoryId,
               latitude: input.latitude,
               longitude: input.longitude,
-              discoveredAt: input.discoveredAt,
+              // 未発見の記録は発見した日を使わないが，列が NOT NULL のため登録した日時を入れておく
+              discoveredAt: input.discoveredAt ?? new Date(),
+              isDiscovered: input.discoveredAt !== null,
               memo: input.memo,
-              isConfirmed: input.isConfirmed,
               // 記録はすべて一般公開する
               isPublic: true,
             }),
@@ -307,9 +308,9 @@ export async function updateRecord({
             categoryId: input.categoryId,
             latitude: input.latitude,
             longitude: input.longitude,
-            discoveredAt: input.discoveredAt,
+            discoveredAt: input.discoveredAt ?? new Date(),
+            isDiscovered: input.discoveredAt !== null,
             memo: input.memo,
-            isConfirmed: input.isConfirmed,
             // 記録はすべて一般公開する
           isPublic: true,
             updatedAt: new Date(),

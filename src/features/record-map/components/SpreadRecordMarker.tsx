@@ -65,7 +65,7 @@ export function SpreadRecordMarker({
           color={color}
           imageSrc={record.thumbnailPhotoId ? createPhotoUrl(record.thumbnailPhotoId) : undefined}
           isSelected={isSelected}
-          isUncertain={!record.isConfirmed}
+          isUncertain={record.discoveredAt === null}
         />
       </button>
     </Marker>

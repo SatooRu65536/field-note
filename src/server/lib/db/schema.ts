@@ -27,11 +27,12 @@ export const records = sqliteTable(
       .references(() => categories.id),
     latitude: real().notNull(),
     longitude: real().notNull(),
+    // 発見した日．時刻は使わない．列を NULL 可にするにはテーブルを作り直す必要があるため，未発見かどうかは isDiscovered で表す
     discoveredAt: integer('discovered_at', { mode: 'timestamp_ms' }).notNull(),
     memo: text().notNull().default(''),
     isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
-    // 伝聞や痕跡だけで，実際には確認していない記録は false にする
-    isConfirmed: integer('is_confirmed', { mode: 'boolean' }).notNull().default(true),
+    // まだ発見していない記録は false にする．このとき discoveredAt は使わない
+    isDiscovered: integer('is_discovered', { mode: 'boolean' }).notNull().default(true),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
