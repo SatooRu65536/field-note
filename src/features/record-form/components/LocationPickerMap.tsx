@@ -1,5 +1,6 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { Map, Marker, useMap } from 'react-map-gl/maplibre'
 import type { MapLayerMouseEvent, MarkerDragEvent } from 'react-map-gl/maplibre'
@@ -14,7 +15,7 @@ import {
   MAX_ZOOM,
   MIN_ZOOM,
 } from '@/integrations/maplibre/constants'
-import { MAP_STYLE_URL } from '@/integrations/maplibre/mapStyle'
+import { mapStyleQueryOptions } from '@/integrations/maplibre/mapStyle'
 
 const LOCATION_PICKER_MAP_ID = 'location-picker-map'
 
@@ -25,6 +26,7 @@ interface LocationPickerMapProps {
 
 export function LocationPickerMap({ location, onLocationChanged }: LocationPickerMapProps) {
   const { [LOCATION_PICKER_MAP_ID]: map } = useMap()
+  const { data: mapStyle } = useSuspenseQuery(mapStyleQueryOptions())
 
   // 現在地の取得などで地図の外から位置が変わった場合に，その位置が見えるよう地図を動かす
   useEffect(() => {
@@ -53,7 +55,7 @@ export function LocationPickerMap({ location, onLocationChanged }: LocationPicke
           ? { latitude: location.latitude, longitude: location.longitude, zoom: FOCUS_ZOOM }
           : INITIAL_VIEW_STATE
       }
-      mapStyle={MAP_STYLE_URL}
+      mapStyle={mapStyle}
       style={{ width: '100%', height: '100%' }}
       minZoom={MIN_ZOOM}
       maxZoom={MAX_ZOOM}

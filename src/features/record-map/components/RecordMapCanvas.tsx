@@ -1,5 +1,6 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Map, useMap } from 'react-map-gl/maplibre'
 import { css } from 'styled-system/css'
@@ -14,7 +15,7 @@ import {
   MAX_ZOOM,
   MIN_ZOOM,
 } from '@/integrations/maplibre/constants'
-import { MAP_STYLE_URL } from '@/integrations/maplibre/mapStyle'
+import { mapStyleQueryOptions } from '@/integrations/maplibre/mapStyle'
 
 import { RECORD_MAP_ID } from '../constants'
 import { useMapBounds } from '../hooks/useMapBounds'
@@ -41,6 +42,7 @@ export function RecordMapCanvas({
   onCurrentPositionRequested,
 }: RecordMapCanvasProps) {
   const { [RECORD_MAP_ID]: map } = useMap()
+  const { data: mapStyle } = useSuspenseQuery(mapStyleQueryOptions())
   const bounds = useMapBounds()
   const records = usePublicRecordsInBounds({ bounds, categoryIds })
   const hasMovedToCurrentPosition = useRef(false)
@@ -63,7 +65,7 @@ export function RecordMapCanvas({
       <Map
         id={RECORD_MAP_ID}
         initialViewState={INITIAL_VIEW_STATE}
-        mapStyle={MAP_STYLE_URL}
+        mapStyle={mapStyle}
         style={{ width: '100%', height: '100%' }}
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}

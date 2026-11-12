@@ -1,0 +1,125 @@
+import type { LayerSpecification, StyleSpecification } from 'maplibre-gl'
+import { describe, expect, it } from 'vitest'
+
+import { customizeMapStyle, isStyleSpecification } from './mapStyle'
+
+const STYLE: StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [
+    { id: 'background', type: 'background', paint: { 'background-color': '#fafaf8' } },
+    {
+      id: 'landcover',
+      type: 'fill',
+      source: 'protomaps',
+      paint: { 'fill-color': 'rgba(234, 241, 233, 0.5)', 'fill-antialias': true },
+    },
+    { id: 'landuse', type: 'fill', source: 'protomaps', paint: { 'fill-color': '#eee' } },
+    { id: 'water', type: 'fill', source: 'protomaps', paint: { 'fill-color': '#d4dadc' } },
+    { id: 'waterway', type: 'line', source: 'protomaps', paint: { 'line-color': '#d1dbdf' } },
+    {
+      id: 'place_town',
+      type: 'symbol',
+      source: 'protomaps',
+      layout: { 'text-field': ['get', 'name:en'], 'text-size': 12 },
+    },
+    { id: 'roadname_minor', type: 'symbol', source: 'protomaps', layout: { 'text-field': '' } },
+    { id: 'housenumber', type: 'symbol', source: 'protomaps', layout: { 'text-field': '' } },
+  ],
+}
+
+/**
+ * スタイルからレイヤーを ID で探す
+ * @param style 探すスタイル
+ * @param id レイヤーの ID
+ * @returns レイヤー．見つからない場合は undefined
+ */
+function findLayer({
+  style,
+  id,
+}: {
+  style: StyleSpecification
+  id: string
+}): LayerSpecification | undefined {
+  return style.layers.find((layer) => layer.id === id)
+}
+
+describe('customizeMapStyle', () => {
+  it('道路名・番地のラベルを取り除く', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(style.layers.map(({ id }) => id)).not.toContain('roadname_minor')
+    expect(style.layers.map(({ id }) => id)).not.toContain('housenumber')
+  })
+
+  it('地名のラベルは日本語名を優先して残す', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(findLayer({ style: style, id: 'place_town' })).toEqual({
+      id: 'place_town',
+      type: 'symbol',
+      source: 'protomaps',
+      layout: { 'text-field': ['coalesce', ['get', 'name:ja'], ['get', 'name']], 'text-size': 12 },
+    })
+  })
+
+  it('緑地の塗りの色と不透明度を変え，その他の塗りの設定は保つ', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(findLayer({ style: style, id: 'landcover' })).toMatchObject({
+      paint: {
+        'fill-color': 'rgba(178, 222, 160, 0.7)',
+        'fill-opacity': 1,
+        'fill-antialias': true,
+      },
+    })
+  })
+
+  it('水域と河川の色を変える', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(findLayer({ style: style, id: 'water' })).toMatchObject({ paint: { 'fill-color': '#a8d4ef' } })
+    expect(findLayer({ style: style, id: 'waterway' })).toMatchObject({ paint: { 'line-color': '#86c0e6' } })
+  })
+
+  it('緑地・水域以外のレイヤーは変えない', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(findLayer({ style: style, id: 'landuse' })).toEqual(findLayer({ style: STYLE, id: 'landuse' }))
+    expect(findLayer({ style: style, id: 'background' })).toEqual(findLayer({ style: STYLE, id: 'background' }))
+  })
+})
+
+describe('isStyleSpecification', () => {
+  it('version 8 で sources と layers を持つ場合に true を返す', () => {
+    // Act
+    const result = isStyleSpecification({ version: 8, sources: {}, layers: [] })
+
+    // Assert
+    expect(result).toBe(true)
+  })
+
+  it.each([
+    ['null', null],
+    ['version が 8 でない', { version: 7, sources: {}, layers: [] }],
+    ['layers が配列でない', { version: 8, sources: {}, layers: {} }],
+    ['sources がない', { version: 8, layers: [] }],
+    ['sources が null', { version: 8, sources: null, layers: [] }],
+  ])('%sの場合は false を返す', (_, value) => {
+    // Act
+    const result = isStyleSpecification(value)
+
+    // Assert
+    expect(result).toBe(false)
+  })
+})
