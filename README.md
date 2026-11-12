@@ -41,8 +41,8 @@ pnpm run dev
 | 変数名 | 設定先 | 説明 |
 | --- | --- | --- |
 | `VITE_PMTILES_URL` | `.env.local`（ビルド時） | 地図タイルの PMTiles の URL．未設定の場合，地図タイルを表示しない |
-| `CF_ACCESS_TEAM_DOMAIN` | Workers の変数 | Cloudflare Access のチームドメイン（例：`https://<team>.cloudflareaccess.com`） |
-| `CF_ACCESS_AUD` | Workers の変数 | 管理画面を保護する Cloudflare Access アプリケーションの AUD タグ |
+| `CF_ACCESS_TEAM_DOMAIN` | Workers のシークレット | Cloudflare Access のチームドメイン（例：`https://<team>.cloudflareaccess.com`） |
+| `CF_ACCESS_AUD` | Workers のシークレット | 管理画面を保護する Cloudflare Access アプリケーションの AUD タグ |
 
 `.env.example` を `.env.local` にコピーして値を設定すること．
 
@@ -88,7 +88,15 @@ java -jar planetiler.jar --osm-path=<OSM PBF ファイル> --output=map.pmtiles 
    ```
 
 4. Cloudflare Access で，`/admin` 以下のパスを保護するアプリケーションを作成する
-5. `CF_ACCESS_TEAM_DOMAIN`・`CF_ACCESS_AUD` を Workers の変数に設定する
+5. `CF_ACCESS_TEAM_DOMAIN`・`CF_ACCESS_AUD` を Workers のシークレットに設定する
+
+   ```bash
+   pnpm exec wrangler secret put CF_ACCESS_TEAM_DOMAIN
+   pnpm exec wrangler secret put CF_ACCESS_AUD
+   ```
+
+   - ダッシュボードで設定した変数は，`wrangler.jsonc` に `vars` がない場合，次のデプロイで削除される（`node_modules/wrangler/config-schema.json` の `keep_vars` の説明）．シークレットは削除されない
+
 6. デプロイする
 
    ```bash
@@ -97,3 +105,4 @@ java -jar planetiler.jar --osm-path=<OSM PBF ファイル> --output=map.pmtiles 
 
 管理者向けのサーバー関数と写真の配信は `/admin` 以外のパスで動くため，Access の保護対象のパス外となる．
 そのため，サーバー側で `Cf-Access-Jwt-Assertion` ヘッダーまたは `CF_Authorization` Cookie の JWT を検証する．
+管理画面の操作が拒否される場合は，`CF_Authorization` Cookie が `/admin` 以外のパスにも送られているか確認すること．
