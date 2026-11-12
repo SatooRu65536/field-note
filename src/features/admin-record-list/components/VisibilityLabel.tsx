@@ -4,7 +4,7 @@ interface VisibilityLabelProps {
   readonly isPublic: boolean
 }
 
-const baseStyles = css({
+const BASE_STYLES = css({
   px: '2',
   py: '0.5',
   borderRadius: 'full',
@@ -17,7 +17,7 @@ export function VisibilityLabel({ isPublic }: VisibilityLabelProps) {
   return (
     <span
       className={cx(
-        baseStyles,
+        BASE_STYLES,
         isPublic
           ? css({ bg: 'accent-muted', color: 'accent' })
           : css({ bg: 'primary-muted', color: 'muted' }),

@@ -9,7 +9,7 @@ export function RecordMapPlaceholder() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bg: '#fcfcfc',
+        bg: 'map-background',
         color: 'muted',
         fontSize: 'sm',
       })}

@@ -5,7 +5,7 @@ import { css } from 'styled-system/css'
 
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
-import { buttonRecipe, inputStyles } from '@/components/ui/styles'
+import { buttonRecipe, INPUT_STYLES } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -72,7 +72,7 @@ export function RecordFormView({
           maxLength={MAX_NAME_LENGTH}
           disabled={values.isNameUnknown}
           onChange={(event) => updateValues({ name: event.target.value })}
-          className={inputStyles}
+          className={INPUT_STYLES}
         />
         <label className={css({ display: 'flex', alignItems: 'center', gap: '2', fontSize: 'sm' })}>
           <input
@@ -89,7 +89,7 @@ export function RecordFormView({
           id="record-category"
           value={values.categoryId}
           onChange={(event) => updateValues({ categoryId: event.target.value })}
-          className={inputStyles}
+          className={INPUT_STYLES}
         >
           <option value="">選択してください</option>
           {categories.map((category) => (
@@ -106,7 +106,7 @@ export function RecordFormView({
           type="datetime-local"
           value={values.discoveredAt}
           onChange={(event) => updateValues({ discoveredAt: event.target.value })}
-          className={inputStyles}
+          className={INPUT_STYLES}
         />
       </FormField>
 
@@ -124,7 +124,7 @@ export function RecordFormView({
           rows={5}
           maxLength={MAX_DESCRIPTION_LENGTH}
           onChange={(event) => updateValues({ description: event.target.value })}
-          className={inputStyles}
+          className={INPUT_STYLES}
         />
       </FormField>
 

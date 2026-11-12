@@ -1,7 +1,7 @@
 // サーバー（UTC）とブラウザで表示がずれてハイドレーションに失敗しないよう，タイムゾーンを固定する
 const TIME_ZONE = 'Asia/Tokyo'
 
-const dateTimeFormat = new Intl.DateTimeFormat('ja-JP', {
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat('ja-JP', {
   timeZone: TIME_ZONE,
   year: 'numeric',
   month: 'long',
@@ -10,7 +10,7 @@ const dateTimeFormat = new Intl.DateTimeFormat('ja-JP', {
   minute: '2-digit',
 })
 
-const dateFormat = new Intl.DateTimeFormat('ja-JP', {
+const DATE_FORMAT = new Intl.DateTimeFormat('ja-JP', {
   timeZone: TIME_ZONE,
   year: 'numeric',
   month: 'numeric',
@@ -23,7 +23,7 @@ const dateFormat = new Intl.DateTimeFormat('ja-JP', {
  * @returns 表示用の文字列
  */
 export function formatDateTime(date: Date): string {
-  return dateTimeFormat.format(date)
+  return DATE_TIME_FORMAT.format(date)
 }
 
 /**
@@ -32,5 +32,5 @@ export function formatDateTime(date: Date): string {
  * @returns 表示用の文字列
  */
 export function formatDate(date: Date): string {
-  return dateFormat.format(date)
+  return DATE_FORMAT.format(date)
 }

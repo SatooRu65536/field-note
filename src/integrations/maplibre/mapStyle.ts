@@ -16,6 +16,7 @@ const MUNICIPALITY_ADMIN_LEVELS = [7, 8]
 const BACKGROUND_LAYER: LayerSpecification = {
   id: 'background',
   type: 'background',
+  // panda.config.ts の semantic token map-background と揃える
   paint: { 'background-color': '#fcfcfc' },
 }
 
@@ -97,6 +98,11 @@ const TILE_LAYERS: LayerSpecification[] = [
   },
 ]
 
+/**
+ * PMTiles の URL から地図のスタイルを作成する
+ * @param pmtilesUrl PMTiles の URL
+ * @returns 地図のスタイル．URL が未設定の場合は背景だけのスタイル
+ */
 function createMapStyle(pmtilesUrl: string | undefined): StyleSpecification {
   if (!pmtilesUrl) {
     console.warn('VITE_PMTILES_URL が未設定のため，地図タイルを表示しません')

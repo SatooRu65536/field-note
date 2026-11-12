@@ -36,6 +36,8 @@ export default defineConfig({
           'danger-muted': { value: '#ffdcdc' },
           muted: { value: '#6b6b6b' },
           border: { value: '#dcdcdc' },
+          // 地図タイルの背景色（src/integrations/maplibre/mapStyle.ts の background レイヤー）と揃える
+          'map-background': { value: '#fcfcfc' },
         },
         radii: {
           sm: { value: 'calc({radii.base} * 0.6)' },

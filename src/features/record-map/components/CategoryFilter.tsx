@@ -8,7 +8,7 @@ interface CategoryFilterProps {
   readonly onCategoryToggled: (categoryId: string) => void
 }
 
-const chipStyles = css({
+const CHIP_STYLES = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: '1.5',
@@ -24,7 +24,7 @@ const chipStyles = css({
   borderColor: 'transparent',
 })
 
-const selectedChipStyles = css({ borderColor: 'primary', fontWeight: 'bold' })
+const SELECTED_CHIP_STYLES = css({ borderColor: 'primary', fontWeight: 'bold' })
 
 export function CategoryFilter({
   categories,
@@ -54,7 +54,7 @@ export function CategoryFilter({
             key={category.id}
             type="button"
             aria-pressed={isSelected}
-            className={cx(chipStyles, isSelected && selectedChipStyles)}
+            className={cx(CHIP_STYLES, isSelected && SELECTED_CHIP_STYLES)}
             onClick={() => onCategoryToggled(category.id)}
           >
             <span

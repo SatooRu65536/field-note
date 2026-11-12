@@ -16,3 +16,6 @@ export const MIN_ZOOM = 4
 export const MAX_ZOOM = 16
 
 export const MAP_TRANSITION_DURATION_MS = 500
+
+// カテゴリが見つからない記録や，発見場所の入力に使うピンの色
+export const DEFAULT_PIN_COLOR = '#000000'

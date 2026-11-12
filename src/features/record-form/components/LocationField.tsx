@@ -58,7 +58,7 @@ export function LocationField({ location, onLocationChanged }: LocationFieldProp
           overflow: 'hidden',
           borderWidth: '1px',
           borderColor: 'border',
-          bg: '#fcfcfc',
+          bg: 'map-background',
         })}
       >
         <MapProvider>

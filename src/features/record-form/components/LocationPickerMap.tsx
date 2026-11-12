@@ -7,6 +7,7 @@ import type { MapLayerMouseEvent, MarkerDragEvent } from 'react-map-gl/maplibre'
 import { MapPin } from '@/components/ui/MapPin'
 import type { Coordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 import {
+  DEFAULT_PIN_COLOR,
   FOCUS_ZOOM,
   INITIAL_VIEW_STATE,
   MAP_TRANSITION_DURATION_MS,
@@ -62,6 +63,7 @@ export function LocationPickerMap({ location, onLocationChanged }: LocationPicke
       localIdeographFontFamily="sans-serif"
       attributionControl={{ compact: true }}
       cursor="crosshair"
+      renderWorldCopies={false}
       onClick={handleClick}
     >
       {location && (
@@ -72,7 +74,7 @@ export function LocationPickerMap({ location, onLocationChanged }: LocationPicke
           draggable
           onDragEnd={handleDragEnd}
         >
-          <MapPin color="#000000" />
+          <MapPin color={DEFAULT_PIN_COLOR} />
         </Marker>
       )}
     </Map>

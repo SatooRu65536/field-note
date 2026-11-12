@@ -7,7 +7,7 @@ interface CategoryCountListProps {
   readonly categoryCounts: readonly CategoryCount[]
 }
 
-const itemStyles = css({
+const ITEM_STYLES = css({
   display: 'flex',
   flexDirection: 'column',
   gap: '1',
@@ -25,12 +25,12 @@ export function CategoryCountList({ totalCount, categoryCounts }: CategoryCountL
       aria-label="カテゴリ別の登録件数"
       className={css({ display: 'flex', flexWrap: 'wrap', gap: '3', listStyle: 'none' })}
     >
-      <li className={itemStyles}>
+      <li className={ITEM_STYLES}>
         <span className={css({ fontSize: 'sm', color: 'muted' })}>すべて</span>
         <span className={css({ fontSize: '2xl', fontWeight: 'bold' })}>{totalCount}</span>
       </li>
       {categoryCounts.map(({ category, count }) => (
-        <li key={category.id} className={itemStyles}>
+        <li key={category.id} className={ITEM_STYLES}>
           <span className={css({ display: 'flex', alignItems: 'center', gap: '1.5', fontSize: 'sm', color: 'muted' })}>
             <span
               aria-hidden="true"

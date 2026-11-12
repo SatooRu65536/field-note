@@ -11,6 +11,7 @@ export function CurrentPositionMarker({ position }: CurrentPositionMarkerProps) 
   return (
     <Marker longitude={position.longitude} latitude={position.latitude} anchor="center">
       <span
+        role="img"
         aria-label="現在地"
         className={css({
           display: 'block',

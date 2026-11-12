@@ -16,7 +16,7 @@ interface RecordDetailViewProps {
   readonly locationMap: ReactNode
 }
 
-const sectionTitleStyles = css({ fontWeight: 'bold', fontSize: 'md', mb: '2' })
+const SECTION_TITLE_STYLES = css({ fontWeight: 'bold', fontSize: 'md', mb: '2' })
 
 export function RecordDetailView({ record, category, locationMap }: RecordDetailViewProps) {
   const name = formatRecordName(record.name)
@@ -40,7 +40,7 @@ export function RecordDetailView({ record, category, locationMap }: RecordDetail
 
       {record.description !== '' && (
         <section>
-          <h2 className={sectionTitleStyles}>説明</h2>
+          <h2 className={SECTION_TITLE_STYLES}>説明</h2>
           <p className={css({ whiteSpace: 'pre-wrap', lineHeight: '1.8' })}>
             {record.description}
           </p>
@@ -49,7 +49,7 @@ export function RecordDetailView({ record, category, locationMap }: RecordDetail
 
       {record.tags.length > 0 && (
         <section>
-          <h2 className={sectionTitleStyles}>タグ</h2>
+          <h2 className={SECTION_TITLE_STYLES}>タグ</h2>
           <ul className={css({ display: 'flex', flexWrap: 'wrap', gap: '2', listStyle: 'none' })}>
             {record.tags.map((tag) => (
               <li
@@ -71,7 +71,7 @@ export function RecordDetailView({ record, category, locationMap }: RecordDetail
       )}
 
       <section>
-        <h2 className={sectionTitleStyles}>発見場所</h2>
+        <h2 className={SECTION_TITLE_STYLES}>発見場所</h2>
         {locationMap}
         <p className={css({ mt: '2', fontSize: 'xs', color: 'muted' })}>
           緯度 {record.latitude.toFixed(6)}，経度 {record.longitude.toFixed(6)}

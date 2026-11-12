@@ -20,7 +20,7 @@ interface PhotoFieldProps {
   readonly onNewPhotosChanged: (photos: readonly NewPhoto[]) => void
 }
 
-const fileInputLabelStyles = css({
+const FILE_INPUT_LABEL_STYLES = css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -36,7 +36,7 @@ const fileInputLabelStyles = css({
   _hover: { borderColor: 'primary', color: 'primary' },
 })
 
-const disabledFileInputLabelStyles = css({ opacity: 0.4, cursor: 'not-allowed' })
+const DISABLED_FILE_INPUT_LABEL_STYLES = css({ opacity: 0.4, cursor: 'not-allowed' })
 
 export function PhotoField({
   id,
@@ -96,7 +96,7 @@ export function PhotoField({
       ))}
       <label
         htmlFor={id}
-        className={cx(fileInputLabelStyles, remainingCount <= 0 && disabledFileInputLabelStyles)}
+        className={cx(FILE_INPUT_LABEL_STYLES, remainingCount <= 0 && DISABLED_FILE_INPUT_LABEL_STYLES)}
       >
         ＋ 写真を追加
       </label>

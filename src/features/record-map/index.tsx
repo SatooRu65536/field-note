@@ -9,6 +9,7 @@ import type { RecordSummary } from '@/integrations/field-note-api/records'
 import { CategoryFilter } from './components/CategoryFilter'
 import { RecordMapPlaceholder } from './components/RecordMapPlaceholder'
 import { RecordPreviewCard } from './components/RecordPreviewCard'
+import { useCurrentPosition } from './hooks/useCurrentPosition'
 
 // MapLibre はブラウザでのみ動作するため，サーバーでは読み込まない
 const RecordMapCanvas = lazy(() =>
@@ -21,6 +22,7 @@ export function RecordMap() {
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions())
   const [categoryIds, setCategoryIds] = useState<readonly string[]>([])
   const [selectedRecord, setSelectedRecord] = useState<RecordSummary | null>(null)
+  const { currentPosition, refreshCurrentPosition } = useCurrentPosition()
 
   function handleCategoryToggle(categoryId: string): void {
     setCategoryIds((current) =>
@@ -39,7 +41,9 @@ export function RecordMap() {
             categories={categories}
             categoryIds={categoryIds}
             selectedRecordId={selectedRecord?.id ?? null}
+            currentPosition={currentPosition}
             onRecordSelected={setSelectedRecord}
+            onCurrentPositionRequested={refreshCurrentPosition}
           />
         </Suspense>
       </ClientOnly>

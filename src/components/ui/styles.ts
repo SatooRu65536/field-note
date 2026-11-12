@@ -34,7 +34,7 @@ export const buttonRecipe = cva({
   defaultVariants: { variant: 'primary', size: 'md' },
 })
 
-export const inputStyles = css({
+export const INPUT_STYLES = css({
   w: '100%',
   minH: '10',
   px: '3',

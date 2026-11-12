@@ -7,6 +7,13 @@ import type { Bounds } from '@/integrations/field-note-api/records'
 import { toPaddedBounds } from '../bounds'
 import { RECORD_MAP_ID } from '../constants'
 
+/**
+ * 地図の移動の終了を購読し，表示範囲に余白を加えた範囲を書き込む
+ * @param map 購読する地図．未作成の場合は何もしない
+ * @param boundsRef 最新の範囲を書き込む参照
+ * @param onStoreChange 範囲が変わったときに呼ぶ関数
+ * @returns 購読を解除する関数
+ */
 function subscribeToBounds({
   map,
   boundsRef,

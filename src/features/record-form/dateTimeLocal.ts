@@ -1,3 +1,8 @@
+/**
+ * 数値を2桁にゼロ埋めする
+ * @param value 数値
+ * @returns 2桁以上の文字列
+ */
 function padZero(value: number): string {
   return String(value).padStart(2, '0')
 }

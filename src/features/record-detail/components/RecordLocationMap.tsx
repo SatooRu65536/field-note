@@ -26,6 +26,7 @@ export function RecordLocationMap({ latitude, longitude, color }: RecordLocation
       localIdeographFontFamily="sans-serif"
       attributionControl={{ compact: true }}
       cooperativeGestures
+      renderWorldCopies={false}
     >
       <Marker latitude={latitude} longitude={longitude} anchor="bottom">
         <MapPin color={color} />

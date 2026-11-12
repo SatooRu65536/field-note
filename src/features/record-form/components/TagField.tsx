@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { css } from 'styled-system/css'
 
-import { inputStyles } from '@/components/ui/styles'
+import { INPUT_STYLES } from '@/components/ui/styles'
 import { MAX_TAG_LENGTH, normalizeTags } from '@/integrations/field-note-api/tags'
 
 interface TagFieldProps {
@@ -69,7 +69,7 @@ export function TagField({ id, tags, onTagsChanged }: TagFieldProps) {
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={commitDraft}
-        className={inputStyles}
+        className={INPUT_STYLES}
       />
     </div>
   )

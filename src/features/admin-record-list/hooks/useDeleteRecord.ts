@@ -5,7 +5,6 @@ import { QUERY_KEYS } from '@/integrations/field-note-api/queryKeys'
 
 interface DeleteRecord {
   readonly deleteRecord: (recordId: string) => void
-  // 削除中の記録の ID
   readonly deletingRecordId: string | null
   readonly error: string | null
 }

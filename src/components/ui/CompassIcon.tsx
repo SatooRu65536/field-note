@@ -1,5 +1,5 @@
 interface CompassIconProps {
-  // 地図の回転に合わせて針を回す角度（度）
+  // 地図の回転に合わせて針を回す角度
   readonly rotate?: number
 }
 

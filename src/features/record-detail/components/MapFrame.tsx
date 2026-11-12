@@ -15,7 +15,7 @@ export function MapFrame({ children }: MapFrameProps) {
         overflow: 'hidden',
         borderWidth: '1px',
         borderColor: 'border',
-        bg: '#fcfcfc',
+        bg: 'map-background',
       })}
     >
       {children}

@@ -3,6 +3,13 @@ import type { Bounds } from '@/integrations/field-note-api/records'
 // 表示範囲ぴったりだと地図の端でピンが急に消えるため，範囲の外側にも余白を持たせる
 const BOUNDS_PADDING_RATIO = 0.5
 
+/**
+ * 値を最小値と最大値の範囲に収める
+ * @param value 値
+ * @param min 最小値
+ * @param max 最大値
+ * @returns 範囲に収めた値
+ */
 function clamp({ value, min, max }: { value: number; min: number; max: number }): number {
   return Math.min(Math.max(value, min), max)
 }

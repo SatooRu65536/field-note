@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { lazy, Suspense } from 'react'
 
 import { categoriesQueryOptions } from '@/integrations/field-note-api/categories'
+import { DEFAULT_PIN_COLOR } from '@/integrations/maplibre/constants'
 import { publicRecordQueryOptions } from '@/integrations/field-note-api/records'
 
 import { MapFrame } from './components/MapFrame'
@@ -15,9 +16,6 @@ const RecordLocationMap = lazy(() =>
     default: module.RecordLocationMap,
   })),
 )
-
-// カテゴリが削除された場合などに使う色
-const FALLBACK_PIN_COLOR = '#000000'
 
 export { RecordNotFound }
 
@@ -43,7 +41,7 @@ export function RecordDetail({ recordId }: RecordDetailProps) {
               <RecordLocationMap
                 latitude={record.latitude}
                 longitude={record.longitude}
-                color={category?.color ?? FALLBACK_PIN_COLOR}
+                color={category?.color ?? DEFAULT_PIN_COLOR}
               />
             </Suspense>
           </ClientOnly>
