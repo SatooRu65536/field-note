@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PhotosPhotoIdRouteImport } from './routes/photos/$photoId'
+import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const PhotosPhotoIdRoute = PhotosPhotoIdRouteImport.update({
   path: '/photos/$photoId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecordsRecordIdRoute = RecordsRecordIdRouteImport.update({
+  id: '/records/$recordId',
+  path: '/records/$recordId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/photos/$photoId': typeof PhotosPhotoIdRoute
+  '/records/$recordId': typeof RecordsRecordIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/photos/$photoId': typeof PhotosPhotoIdRoute
+  '/records/$recordId': typeof RecordsRecordIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/photos/$photoId': typeof PhotosPhotoIdRoute
+  '/records/$recordId': typeof RecordsRecordIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/photos/$photoId'
+  fullPaths: '/' | '/photos/$photoId' | '/records/$recordId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/photos/$photoId'
-  id: '__root__' | '/' | '/photos/$photoId'
+  to: '/' | '/photos/$photoId' | '/records/$recordId'
+  id: '__root__' | '/' | '/photos/$photoId' | '/records/$recordId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PhotosPhotoIdRoute: typeof PhotosPhotoIdRoute
+  RecordsRecordIdRoute: typeof RecordsRecordIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PhotosPhotoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/records/$recordId': {
+      id: '/records/$recordId'
+      path: '/records/$recordId'
+      fullPath: '/records/$recordId'
+      preLoaderRoute: typeof RecordsRecordIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PhotosPhotoIdRoute: PhotosPhotoIdRoute,
+  RecordsRecordIdRoute: RecordsRecordIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

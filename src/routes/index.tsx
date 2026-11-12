@@ -1,14 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/')({ component: Home })
+import { MapLayout } from '@/components/layouts/MapLayout'
+import { RecordMap } from '@/features/record-map'
+import { categoriesQueryOptions } from '@/integrations/field-note-api/categories'
 
-function Home() {
+export const Route = createFileRoute('/')({
+  loader: ({ context }) => context.queryClient.ensureQueryData(categoriesQueryOptions()),
+  component: MapPage,
+})
+
+function MapPage() {
   return (
-    <div className="p-8">
-      <h1 className="text-4xl font-bold">Welcome to TanStack Start</h1>
-      <p className="mt-4 text-lg">
-        Edit <code>src/routes/index.tsx</code> to get started.
-      </p>
-    </div>
+    <MapLayout>
+      <RecordMap />
+    </MapLayout>
   )
 }
