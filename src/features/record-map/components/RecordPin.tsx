@@ -3,6 +3,8 @@ import type { MarkerEvent } from 'react-map-gl/maplibre'
 import { css } from 'styled-system/css'
 
 import { MapPin } from '@/components/ui/MapPin'
+import { PhotoMapPin } from '@/components/ui/PhotoMapPin'
+import { createPhotoUrl } from '@/integrations/field-note-api/photos'
 import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 
@@ -46,7 +48,15 @@ export function RecordPin({ record, color, isSelected, onRecordSelected }: Recor
           _focusVisible: { outline: '2px solid', outlineColor: 'accent', outlineOffset: '2px' },
         })}
       >
-        <MapPin color={color} isSelected={isSelected} />
+        {record.thumbnailPhotoId ? (
+          <PhotoMapPin
+            src={createPhotoUrl(record.thumbnailPhotoId)}
+            color={color}
+            isSelected={isSelected}
+          />
+        ) : (
+          <MapPin color={color} isSelected={isSelected} />
+        )}
       </button>
     </Marker>
   )
