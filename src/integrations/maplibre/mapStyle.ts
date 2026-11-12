@@ -45,6 +45,23 @@ const TRANSIT_MIN_ZOOM = 12
 const PREFECTURE_BOUNDARY_LAYER_ID = 'boundary_state'
 const PREFECTURE_BOUNDARY_COLOR = '#8a6f80'
 
+// 元のスタイルにない市町村境を，県境と同じ系統の色で県境より細く薄く描く
+const MUNICIPALITY_BOUNDARY_LAYER: LayerSpecification = {
+  id: 'field_note_municipality_boundary',
+  type: 'line',
+  source: 'protomaps',
+  'source-layer': 'boundaries',
+  minzoom: 8,
+  // 日本の行政区域では kind_detail（admin_level）の 7 が市町村にあたる
+  filter: ['==', ['get', 'kind_detail'], 7],
+  paint: {
+    'line-color': PREFECTURE_BOUNDARY_COLOR,
+    'line-opacity': 0.6,
+    'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.6, 12, 1, 16, 1.5],
+  },
+  layout: { 'line-join': 'round' },
+}
+
 const SOURCE_ID = 'protomaps'
 const STATION_COLOR = '#4a5160'
 // 元のスタイルの地名のラベルと同じフォント．CJK のフォントを含む
@@ -145,7 +162,7 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
 }
 
 /**
- * CARTO のスタイルを，地名を絞り込み，緑地・河川・線路・県境を濃くし，駅を加えたスタイルに変換する
+ * CARTO のスタイルを，地名を絞り込み，緑地・河川・線路・県境を濃くし，駅と市町村境を加えたスタイルに変換する
  * @param style CARTO のスタイル
  * @returns 変換したスタイル
  */
@@ -155,10 +172,11 @@ export function customizeMapStyle(style: StyleSpecification): StyleSpecification
     .map(customizeLayer)
   return {
     ...style,
-    // 駅は他のラベルと同じく元のレイヤーより手前に，県境は他のどのレイヤーにも隠れないよう最前面に描く
+    // 駅は他のラベルと同じく元のレイヤーより手前に，県境は他のどのレイヤーにも隠れないよう最前面に描き，市町村境はその下に描く
     layers: [
       ...layers.filter((layer) => layer.id !== PREFECTURE_BOUNDARY_LAYER_ID),
       ...TRANSIT_LAYERS,
+      MUNICIPALITY_BOUNDARY_LAYER,
       ...layers.filter((layer) => layer.id === PREFECTURE_BOUNDARY_LAYER_ID),
     ],
   }

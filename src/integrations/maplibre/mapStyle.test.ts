@@ -131,7 +131,7 @@ describe('customizeMapStyle の駅と路線', () => {
     const style = customizeMapStyle(STYLE)
 
     // Assert
-    expect(style.layers.slice(-4, -1).map(({ id }) => id)).toEqual([
+    expect(style.layers.slice(-5, -2).map(({ id }) => id)).toEqual([
       'field_note_subway',
       'field_note_station_dot',
       'field_note_station_label',
@@ -158,6 +158,19 @@ describe('customizeMapStyle の県境', () => {
 
     // Assert
     expect(style.layers.at(-1)?.id).toBe('boundary_state')
+  })
+
+  it('市町村境を県境のすぐ下に，県境より細く描く', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+    const municipality = findLayer({ style, id: 'field_note_municipality_boundary' })
+
+    // Assert
+    expect(style.layers.at(-2)?.id).toBe('field_note_municipality_boundary')
+    expect(municipality).toMatchObject({
+      filter: ['==', ['get', 'kind_detail'], 7],
+      paint: { 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.6, 12, 1, 16, 1.5] },
+    })
   })
 
   it('県境を濃い色の太い実線にする', () => {
