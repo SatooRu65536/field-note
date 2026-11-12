@@ -16,7 +16,12 @@ import {
   MAX_NAME_LENGTH,
 } from '@/integrations/field-note-api/recordFormData'
 
-import { filterNameSuggestions, findSavedNameMemo, inferCategoryId } from '../candidates'
+import {
+  filterNameSuggestions,
+  findSavedNameMemo,
+  inferCategoryId,
+  inferTags,
+} from '../candidates'
 import type { RecordFormValues } from '../types'
 import { LocationField } from './LocationField'
 import { NameMemoField } from './NameMemoField'
@@ -52,6 +57,9 @@ export function RecordFormView({
     initialValues.categoryId !== '',
   )
   const isCategoryInferred = !isCategorySelectedByUser && values.categoryId !== ''
+  // カテゴリと同じく，利用者が選んだタグは名前からの推定で上書きしない
+  const [isTagsSelectedByUser, setIsTagsSelectedByUser] = useState(initialValues.tags.length > 0)
+  const isTagsInferred = !isTagsSelectedByUser && values.tags.length > 0
 
   function updateValues(changes: Partial<RecordFormValues>): void {
     setValues((current) => ({ ...current, ...changes }))
@@ -60,15 +68,19 @@ export function RecordFormView({
   function handleNameChange(name: string): void {
     // 別の名前になると共有するメモも変わるため，編集中の名前ごとのメモを破棄して保存済みのメモを表示する
     const isSameName = normalizeKana(name) === normalizeKana(values.name)
-    const nameChanges = isSameName ? { name } : { name, nameMemo: null }
-    if (isCategorySelectedByUser) {
-      updateValues(nameChanges)
-      return
-    }
     updateValues({
-      ...nameChanges,
-      categoryId: inferCategoryId({ candidates: nameCandidates, name }) ?? '',
+      name,
+      ...(isSameName ? {} : { nameMemo: null }),
+      ...(isCategorySelectedByUser
+        ? {}
+        : { categoryId: inferCategoryId({ candidates: nameCandidates, name }) ?? '' }),
+      ...(isTagsSelectedByUser ? {} : { tags: inferTags({ candidates: nameCandidates, name }) ?? [] }),
     })
+  }
+
+  function handleTagsChange(tags: readonly string[]): void {
+    setIsTagsSelectedByUser(true)
+    updateValues({ tags })
   }
 
   function handleCategoryChange(categoryId: string): void {
@@ -181,8 +193,13 @@ export function RecordFormView({
           id="record-tags"
           tags={values.tags}
           candidates={tagCandidates}
-          onTagsChanged={(tags) => updateValues({ tags })}
+          onTagsChanged={handleTagsChange}
         />
+        {isTagsInferred && (
+          <p className={css({ fontSize: 'xs', color: 'muted' })}>
+            過去の同じ名前の記録から推定しました
+          </p>
+        )}
       </FieldGroup>
 
       {error && (

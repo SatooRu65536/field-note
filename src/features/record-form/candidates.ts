@@ -55,7 +55,39 @@ export function inferCategoryId({
   candidates: readonly NameCandidate[]
   name: string
 }): string | null {
+  return findSameNameCandidate({ candidates, name })?.categoryId ?? null
+}
+
+/**
+ * 過去の同じ名前の記録から，タグを推定する
+ * @param candidates 過去の名前と，その名前の記録に付けられたタグ
+ * @param name 入力中の名前．ひらがな・カタカナの違いは無視する
+ * @returns 使われた回数の多い順のタグ．同じ名前の記録がない場合は null
+ */
+export function inferTags({
+  candidates,
+  name,
+}: {
+  candidates: readonly NameCandidate[]
+  name: string
+}): readonly string[] | null {
+  return findSameNameCandidate({ candidates, name })?.tags ?? null
+}
+
+/**
+ * ひらがな・カタカナの違いを無視して，同じ名前の過去の記録を探す
+ * @param candidates 過去の名前
+ * @param name 入力中の名前
+ * @returns 同じ名前の候補．ない場合や名前が空の場合は undefined
+ */
+function findSameNameCandidate({
+  candidates,
+  name,
+}: {
+  candidates: readonly NameCandidate[]
+  name: string
+}): NameCandidate | undefined {
   const nameKey = normalizeKana(name)
-  if (nameKey === '') return null
-  return candidates.find((candidate) => normalizeKana(candidate.name) === nameKey)?.categoryId ?? null
+  if (nameKey === '') return undefined
+  return candidates.find((candidate) => normalizeKana(candidate.name) === nameKey)
 }

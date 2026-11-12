@@ -4,14 +4,15 @@ import {
   filterNameSuggestions,
   findSavedNameMemo,
   inferCategoryId,
+  inferTags,
   MAX_NAME_SUGGESTIONS,
 } from './candidates'
 
 const CANDIDATES = [
-  { name: 'コナラ', recordCount: 5, categoryId: 'seed' },
-  { name: 'こならの実', recordCount: 3, categoryId: 'seed' },
-  { name: 'クヌギ', recordCount: 2, categoryId: 'plant' },
-  { name: 'ナラガシワ', recordCount: 1, categoryId: 'plant' },
+  { name: 'コナラ', recordCount: 5, categoryId: 'seed', tags: ['どんぐり', '秋'] },
+  { name: 'こならの実', recordCount: 3, categoryId: 'seed', tags: [] },
+  { name: 'クヌギ', recordCount: 2, categoryId: 'plant', tags: [] },
+  { name: 'ナラガシワ', recordCount: 1, categoryId: 'plant', tags: [] },
 ]
 
 const MEMOS = [{ nameKey: 'こなら', memo: 'ブナ科の落葉高木' }]
@@ -55,6 +56,7 @@ describe('filterNameSuggestions', () => {
       name: `イチョウ${index}`,
       recordCount: 1,
       categoryId: 'plant',
+      tags: [],
     }))
 
     // Act
@@ -98,5 +100,23 @@ describe('inferCategoryId', () => {
 
     // Assert
     expect(categoryId).toBeNull()
+  })
+})
+
+describe('inferTags', () => {
+  it('ひらがな・カタカナの違いを無視して同じ名前の記録のタグを返す', () => {
+    // Act
+    const tags = inferTags({ candidates: CANDIDATES, name: 'こなら' })
+
+    // Assert
+    expect(tags).toEqual(['どんぐり', '秋'])
+  })
+
+  it('同じ名前の記録がない場合は null を返す', () => {
+    // Act
+    const tags = inferTags({ candidates: CANDIDATES, name: 'イチョウ' })
+
+    // Assert
+    expect(tags).toBeNull()
   })
 })

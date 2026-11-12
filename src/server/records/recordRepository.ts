@@ -212,7 +212,7 @@ export async function findPhotoLocation({
 /**
  * 過去の記録に使われた名前を，ひらがな・カタカナの違いをまとめて記録の多い順に取得する
  * @param db Drizzle のクライアント
- * @returns 名前と記録の件数，推定するカテゴリ
+ * @returns 名前と記録の件数，推定するカテゴリとタグ
  */
 export async function listNameCandidates(db: Database): Promise<readonly NameCandidate[]> {
   const rows = await db
@@ -220,9 +220,16 @@ export async function listNameCandidates(db: Database): Promise<readonly NameCan
     .from(records)
     .where(isNotNull(records.name))
     .groupBy(records.name, records.categoryId)
-  return mergeNameCandidates(
-    rows.flatMap(({ name, ...row }) => (name === null ? [] : [{ name, ...row }])),
-  )
+  const tagRows = await db
+    .select({ name: records.name, tag: recordTags.tag, recordCount: count() })
+    .from(recordTags)
+    .innerJoin(records, eq(recordTags.recordId, records.id))
+    .where(isNotNull(records.name))
+    .groupBy(records.name, recordTags.tag)
+  return mergeNameCandidates({
+    rows: rows.flatMap(({ name, ...row }) => (name === null ? [] : [{ name, ...row }])),
+    tagRows: tagRows.flatMap(({ name, ...row }) => (name === null ? [] : [{ name, ...row }])),
+  })
 }
 
 /**

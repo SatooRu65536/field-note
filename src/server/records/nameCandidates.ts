@@ -6,12 +6,20 @@ export interface NameCategoryCount {
   readonly recordCount: number
 }
 
+export interface NameTagCount {
+  readonly name: string
+  readonly tag: string
+  readonly recordCount: number
+}
+
 export interface NameCandidate {
   readonly name: string
   // ひらがな・カタカナの違いを無視して同じ名前とみなした記録の件数
   readonly recordCount: number
   // 同じ名前の記録で最も多く使われたカテゴリ
   readonly categoryId: string
+  // 同じ名前の記録に付けられたタグ．使われた回数の多い順
+  readonly tags: readonly string[]
 }
 
 /**
@@ -28,13 +36,13 @@ function compareByCount(
 }
 
 /**
- * 値ごとに件数を合計し，最も件数の多い値を返す
+ * 値ごとに件数を合計し，件数の多い順に並べる
  * @param rows 値と件数
- * @returns 最も件数の多い値．同数の場合は値の順で先のもの
+ * @returns 値．同数の場合は値の順
  */
-function findMostFrequent(
+function sortByFrequency(
   rows: readonly { readonly value: string; readonly recordCount: number }[],
-): string {
+): readonly string[] {
   const values = [...new Set(rows.map(({ value }) => value))]
   const totals = values.map((value) => ({
     name: value,
@@ -42,15 +50,22 @@ function findMostFrequent(
       .filter((row) => row.value === value)
       .reduce((total, { recordCount }) => total + recordCount, 0),
   }))
-  return [...totals].sort(compareByCount)[0]?.name ?? ''
+  return [...totals].sort(compareByCount).map(({ name }) => name)
 }
 
 /**
  * ひらがな・カタカナの違いだけの名前を1つにまとめ，記録の多い順に並べる
  * @param rows 名前とカテゴリの組ごとの記録の件数
- * @returns まとめた名前．表記と推定するカテゴリは，最も多く使われたものにする
+ * @param tagRows 名前とタグの組ごとの記録の件数
+ * @returns まとめた名前．表記と推定するカテゴリは最も多く使われたものにし，タグは使われた回数の多い順に並べる
  */
-export function mergeNameCandidates(rows: readonly NameCategoryCount[]): readonly NameCandidate[] {
+export function mergeNameCandidates({
+  rows,
+  tagRows,
+}: {
+  rows: readonly NameCategoryCount[]
+  tagRows: readonly NameTagCount[]
+}): readonly NameCandidate[] {
   const nameKeys = [...new Set(rows.map(({ name }) => normalizeKana(name)))]
   const merged = nameKeys.map((nameKey) => {
     const group = rows.filter(({ name }) => normalizeKana(name) === nameKey)
@@ -60,7 +75,23 @@ export function mergeNameCandidates(rows: readonly NameCategoryCount[]): readonl
       categoryId: findMostFrequent(
         group.map(({ categoryId, recordCount }) => ({ value: categoryId, recordCount })),
       ),
+      tags: sortByFrequency(
+        tagRows
+          .filter(({ name }) => normalizeKana(name) === nameKey)
+          .map(({ tag, recordCount }) => ({ value: tag, recordCount })),
+      ),
     }
   })
   return [...merged].sort(compareByCount)
+}
+
+/**
+ * 値ごとに件数を合計し，最も件数の多い値を返す
+ * @param rows 値と件数
+ * @returns 最も件数の多い値．同数の場合は値の順で先のもの
+ */
+function findMostFrequent(
+  rows: readonly { readonly value: string; readonly recordCount: number }[],
+): string {
+  return sortByFrequency(rows)[0] ?? ''
 }
