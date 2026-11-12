@@ -1,7 +1,8 @@
 import { ClientOnly } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { lazy, Suspense } from 'react'
 
+import { adminStatusQueryOptions } from '@/integrations/field-note-api/adminStatus'
 import { categoriesQueryOptions } from '@/integrations/field-note-api/categories'
 import { DEFAULT_PIN_COLOR } from '@/integrations/maplibre/constants'
 import { publicRecordQueryOptions } from '@/integrations/field-note-api/records'
@@ -26,6 +27,8 @@ interface RecordDetailProps {
 export function RecordDetail({ recordId }: RecordDetailProps) {
   const { data: record } = useSuspenseQuery(publicRecordQueryOptions(recordId))
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions())
+  // 一般ユーザーの表示を待たせないよう，判定は表示の後にブラウザで行う
+  const { data: isAdmin = false } = useQuery(adminStatusQueryOptions())
   if (!record) return <RecordNotFound />
 
   const category = categories.find(({ id }) => id === record.categoryId)
@@ -34,6 +37,7 @@ export function RecordDetail({ recordId }: RecordDetailProps) {
     <RecordDetailView
       record={record}
       category={category}
+      isAdmin={isAdmin}
       locationMap={
         <MapFrame>
           <ClientOnly>

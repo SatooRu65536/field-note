@@ -7,6 +7,7 @@ import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordDetail } from '@/integrations/field-note-api/records'
 import { formatDateTime } from '@/integrations/intl/formatDateTime'
 
+import { EditRecordLink } from './EditRecordLink'
 import { PhotoGallery } from './PhotoGallery'
 
 interface RecordDetailViewProps {
@@ -14,17 +15,27 @@ interface RecordDetailViewProps {
   readonly category: Category | undefined
   // 発見場所の地図．地図はブラウザでのみ描画するため，呼び出し側から渡す
   readonly locationMap: ReactNode
+  // 管理者には編集画面への移動を表示する
+  readonly isAdmin: boolean
 }
 
 const SECTION_TITLE_STYLES = css({ fontWeight: 'bold', fontSize: 'md', mb: '2' })
 
-export function RecordDetailView({ record, category, locationMap }: RecordDetailViewProps) {
+export function RecordDetailView({
+  record,
+  category,
+  locationMap,
+  isAdmin,
+}: RecordDetailViewProps) {
   const name = formatRecordName(record.name)
 
   return (
     <article className={css({ display: 'flex', flexDirection: 'column', gap: '6' })}>
       <header className={css({ display: 'flex', flexDirection: 'column', gap: '2' })}>
-        <h1 className={css({ fontSize: '2xl', fontWeight: 'bold' })}>{name}</h1>
+        <div className={css({ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '3' })}>
+          <h1 className={css({ fontSize: '2xl', fontWeight: 'bold' })}>{name}</h1>
+          {isAdmin && <EditRecordLink recordId={record.id} />}
+        </div>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '3', flexWrap: 'wrap' })}>
           {category && <DotLabel name={category.name} color={category.color} />}
           <time
