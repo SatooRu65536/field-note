@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm'
 import {
   index,
   integer,
-  primaryKey,
   real,
   sqliteTable,
   text,
@@ -28,7 +27,7 @@ export const records = sqliteTable(
     latitude: real().notNull(),
     longitude: real().notNull(),
     discoveredAt: integer('discovered_at', { mode: 'timestamp_ms' }).notNull(),
-    description: text().notNull().default(''),
+    memo: text().notNull().default(''),
     isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
@@ -58,18 +57,4 @@ export const recordPhotos = sqliteTable(
       .default(sql`(unixepoch() * 1000)`),
   },
   (table) => [index('record_photos_record_id_index').on(table.recordId)],
-)
-
-export const recordTags = sqliteTable(
-  'record_tags',
-  {
-    recordId: text('record_id')
-      .notNull()
-      .references(() => records.id, { onDelete: 'cascade' }),
-    tag: text().notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.recordId, table.tag] }),
-    index('record_tags_tag_index').on(table.tag),
-  ],
 )

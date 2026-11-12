@@ -9,14 +9,13 @@ import { FormField } from '@/components/ui/FormField'
 import { buttonRecipe, INPUT_STYLES } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
 import {
-  MAX_DESCRIPTION_LENGTH,
+  MAX_MEMO_LENGTH,
   MAX_NAME_LENGTH,
 } from '@/integrations/field-note-api/recordFormData'
 
 import type { RecordFormValues } from '../types'
 import { LocationField } from './LocationField'
 import { PhotoField } from './PhotoField'
-import { TagField } from './TagField'
 
 interface RecordFormViewProps {
   readonly title: string
@@ -118,22 +117,14 @@ export function RecordFormView({
         />
       </FieldGroup>
 
-      <FormField label="説明" htmlFor="record-description">
+      <FormField label="メモ" htmlFor="record-memo">
         <textarea
-          id="record-description"
-          value={values.description}
+          id="record-memo"
+          value={values.memo}
           rows={5}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          onChange={(event) => updateValues({ description: event.target.value })}
+          maxLength={MAX_MEMO_LENGTH}
+          onChange={(event) => updateValues({ memo: event.target.value })}
           className={INPUT_STYLES}
-        />
-      </FormField>
-
-      <FormField label="タグ" htmlFor="record-tags">
-        <TagField
-          id="record-tags"
-          tags={values.tags}
-          onTagsChanged={(tags) => updateValues({ tags })}
         />
       </FormField>
 

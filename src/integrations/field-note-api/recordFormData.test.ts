@@ -8,12 +8,11 @@ import {
 
 import {
   createRecordFormData,
-  MAX_DESCRIPTION_LENGTH,
+  MAX_MEMO_LENGTH,
   MAX_NAME_LENGTH,
   parseRecordFormData,
 } from './recordFormData'
 import type { RecordPayload } from './recordFormData'
-import { MAX_TAG_COUNT, MAX_TAG_LENGTH } from './tags'
 
 function createPhoto({
   type = 'image/jpeg',
@@ -29,8 +28,7 @@ const PAYLOAD: RecordPayload = {
   latitude: 35.1847501,
   longitude: 136.8971134,
   discoveredAt: new Date('2026-11-13T01:02:03.000Z'),
-  description: '公園の入口で拾った',
-  tags: ['どんぐり', '秋'],
+  memo: '公園の入口で拾った',
   isPublic: true,
   photos: [],
   removedPhotoIds: ['photo-1'],
@@ -63,17 +61,6 @@ describe('parseRecordFormData', () => {
 
     // Assert
     expect(result.ok && result.value.name).toBeNull()
-  })
-
-  it('タグを正規化する', () => {
-    // Arrange
-    const formData = createRecordFormData({ ...PAYLOAD, tags: ['#秋', '秋', ' '] })
-
-    // Act
-    const result = parseRecordFormData(formData)
-
-    // Assert
-    expect(result.ok && result.value.tags).toEqual(['秋'])
   })
 
   it('ファイルを選択していない input から送られた空の File を除外する', () => {
@@ -109,9 +96,7 @@ describe('parseRecordFormData', () => {
 
   it.each([
     ['名前', { name: 'あ'.repeat(MAX_NAME_LENGTH) }],
-    ['説明', { description: 'あ'.repeat(MAX_DESCRIPTION_LENGTH) }],
-    ['タグの文字数', { tags: ['あ'.repeat(MAX_TAG_LENGTH)] }],
-    ['タグの個数', { tags: Array.from({ length: MAX_TAG_COUNT }, (_, index) => `タグ${index}`) }],
+    ['メモ', { memo: 'あ'.repeat(MAX_MEMO_LENGTH) }],
   ])('%sが上限ちょうどの場合は受け付ける', (_, override) => {
     // Arrange
     const formData = createRecordFormData({ ...PAYLOAD, ...override })
@@ -126,19 +111,9 @@ describe('parseRecordFormData', () => {
   it.each([
     ['名前', { name: 'あ'.repeat(MAX_NAME_LENGTH + 1) }, `名前は ${MAX_NAME_LENGTH} 文字以内で入力してください`],
     [
-      '説明',
-      { description: 'あ'.repeat(MAX_DESCRIPTION_LENGTH + 1) },
-      `説明は ${MAX_DESCRIPTION_LENGTH} 文字以内で入力してください`,
-    ],
-    [
-      'タグの文字数',
-      { tags: ['あ'.repeat(MAX_TAG_LENGTH + 1)] },
-      `タグは ${MAX_TAG_LENGTH} 文字以内で入力してください`,
-    ],
-    [
-      'タグの個数',
-      { tags: Array.from({ length: MAX_TAG_COUNT + 1 }, (_, index) => `タグ${index}`) },
-      `タグは ${MAX_TAG_COUNT} 個までです`,
+      'メモ',
+      { memo: 'あ'.repeat(MAX_MEMO_LENGTH + 1) },
+      `メモは ${MAX_MEMO_LENGTH} 文字以内で入力してください`,
     ],
   ])('%sが上限を超える場合はエラーを返す', (_, override, error) => {
     // Arrange

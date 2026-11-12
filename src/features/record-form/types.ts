@@ -14,8 +14,7 @@ export interface RecordFormValues {
   readonly location: Coordinates | null
   // input[type=datetime-local] の値
   readonly discoveredAt: string
-  readonly description: string
-  readonly tags: readonly string[]
+  readonly memo: string
   readonly isPublic: boolean
   readonly existingPhotoIds: readonly string[]
   readonly removedPhotoIds: readonly string[]

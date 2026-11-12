@@ -3,7 +3,7 @@ import type { BatchItem } from 'drizzle-orm/batch'
 
 import { MAX_PHOTO_COUNT } from '@/constants/photos'
 import type { Database } from '@/server/lib/db/client'
-import { categories, recordPhotos, records, recordTags } from '@/server/lib/db/schema'
+import { categories, recordPhotos, records } from '@/server/lib/db/schema'
 import { deletePhotos, putPhoto } from '@/server/lib/photo-storage/photoStorage'
 
 import type { RecordCommandResult, RecordInput, RecordUpdateInput } from './types'
@@ -92,22 +92,6 @@ async function hasCategory({
 }
 
 /**
- * 記録に付けるタグの行を作成する
- * @param recordId 記録の ID
- * @param tags タグ
- * @returns record_tags に挿入する行
- */
-function createTagRows({
-  recordId,
-  tags,
-}: {
-  recordId: string
-  tags: readonly string[]
-}): readonly { readonly recordId: string; readonly tag: string }[] {
-  return tags.map((tag) => ({ recordId, tag }))
-}
-
-/**
  * 保存した写真の行を，指定した表示順から連番で作成する
  * @param recordId 記録の ID
  * @param photos 保存した写真
@@ -151,7 +135,7 @@ async function runInBatch({
 }
 
 /**
- * 記録を写真・タグとともに登録する
+ * 記録を写真とともに登録する
  * @param db Drizzle のクライアント
  * @param input 登録する内容
  * @returns 登録した記録の ID．カテゴリが存在しない場合はエラー
@@ -170,7 +154,6 @@ export async function createRecord({
 
   const recordId = crypto.randomUUID()
   const uploadedPhotos = await uploadPhotos({ recordId, photos: input.photos })
-  const tagRows = createTagRows({ recordId, tags: input.tags })
   const photoRows = createPhotoRows({ recordId, photos: uploadedPhotos, firstSortOrder: 0 })
 
   try {
@@ -184,10 +167,9 @@ export async function createRecord({
           latitude: input.latitude,
           longitude: input.longitude,
           discoveredAt: input.discoveredAt,
-          description: input.description,
+          memo: input.memo,
           isPublic: input.isPublic,
         }),
-        ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
         ...(photoRows.length > 0 ? [db.insert(recordPhotos).values([...photoRows])] : []),
       ],
     })
@@ -201,7 +183,7 @@ export async function createRecord({
 }
 
 /**
- * 記録を更新し，写真の追加・削除とタグの置き換えを行う
+ * 記録を更新し，写真の追加・削除を行う
  * @param db Drizzle のクライアント
  * @param recordId 更新する記録の ID
  * @param input 更新後の内容
@@ -243,7 +225,6 @@ export async function updateRecord({
   const firstSortOrder = (sortOrderResult?.value ?? -1) + 1
 
   const uploadedPhotos = await uploadPhotos({ recordId, photos: input.photos })
-  const tagRows = createTagRows({ recordId, tags: input.tags })
   const photoRows = createPhotoRows({ recordId, photos: uploadedPhotos, firstSortOrder })
   const removedPhotoIds = removedPhotos.map(({ id }) => id)
 
@@ -259,13 +240,11 @@ export async function updateRecord({
             latitude: input.latitude,
             longitude: input.longitude,
             discoveredAt: input.discoveredAt,
-            description: input.description,
+            memo: input.memo,
             isPublic: input.isPublic,
             updatedAt: new Date(),
           })
           .where(eq(records.id, recordId)),
-        db.delete(recordTags).where(eq(recordTags.recordId, recordId)),
-        ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
         ...(removedPhotoIds.length > 0
           ? [
               db
@@ -292,7 +271,7 @@ export async function updateRecord({
 }
 
 /**
- * 記録を写真・タグとともに削除する
+ * 記録を写真とともに削除する
  * @param db Drizzle のクライアント
  * @param recordId 削除する記録の ID
  * @returns 削除した記録の ID．記録が存在しない場合はエラー
@@ -310,7 +289,7 @@ export async function deleteRecord({
     .from(recordPhotos)
     .where(eq(recordPhotos.recordId, recordId))
 
-  // 写真・タグは外部キーの ON DELETE CASCADE で削除される
+  // 写真の行は外部キーの ON DELETE CASCADE で削除される
   const deleted = await db
     .delete(records)
     .where(eq(records.id, recordId))

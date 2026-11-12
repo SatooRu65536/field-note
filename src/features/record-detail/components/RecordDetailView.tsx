@@ -38,35 +38,12 @@ export function RecordDetailView({ record, category, locationMap }: RecordDetail
 
       <PhotoGallery photoIds={record.photoIds} alt={name} />
 
-      {record.description !== '' && (
+      {record.memo !== '' && (
         <section>
-          <h2 className={SECTION_TITLE_STYLES}>説明</h2>
+          <h2 className={SECTION_TITLE_STYLES}>メモ</h2>
           <p className={css({ whiteSpace: 'pre-wrap', lineHeight: '1.8' })}>
-            {record.description}
+            {record.memo}
           </p>
-        </section>
-      )}
-
-      {record.tags.length > 0 && (
-        <section>
-          <h2 className={SECTION_TITLE_STYLES}>タグ</h2>
-          <ul className={css({ display: 'flex', flexWrap: 'wrap', gap: '2', listStyle: 'none' })}>
-            {record.tags.map((tag) => (
-              <li
-                key={tag}
-                className={css({
-                  px: '2.5',
-                  py: '1',
-                  borderRadius: 'full',
-                  bg: 'accent-muted',
-                  color: 'accent',
-                  fontSize: 'sm',
-                })}
-              >
-                #{tag}
-              </li>
-            ))}
-          </ul>
         </section>
       )}
 

@@ -1,7 +1,7 @@
 import { and, asc, between, desc, eq, inArray, sql } from 'drizzle-orm'
 
 import type { Database } from '@/server/lib/db/client'
-import { recordPhotos, records, recordTags } from '@/server/lib/db/schema'
+import { recordPhotos, records } from '@/server/lib/db/schema'
 
 import type { Bounds, RecordDetail, RecordSummary } from './types'
 
@@ -73,7 +73,7 @@ export async function listAllRecords(db: Database): Promise<readonly RecordSumma
 }
 
 /**
- * 記録を写真・タグとともに取得する
+ * 記録を写真とともに取得する
  * @param db Drizzle のクライアント
  * @param recordId 取得する記録の ID
  * @param includePrivate 非公開の記録も取得する場合は true
@@ -92,18 +92,11 @@ export async function findRecord({
   if (!record) return null
   if (!record.isPublic && !includePrivate) return null
 
-  const [photos, tags] = await db.batch([
-    db
-      .select({ id: recordPhotos.id })
-      .from(recordPhotos)
-      .where(eq(recordPhotos.recordId, recordId))
-      .orderBy(asc(recordPhotos.sortOrder)),
-    db
-      .select({ tag: recordTags.tag })
-      .from(recordTags)
-      .where(eq(recordTags.recordId, recordId))
-      .orderBy(asc(recordTags.tag)),
-  ])
+  const photos = await db
+    .select({ id: recordPhotos.id })
+    .from(recordPhotos)
+    .where(eq(recordPhotos.recordId, recordId))
+    .orderBy(asc(recordPhotos.sortOrder))
 
   return {
     id: record.id,
@@ -112,9 +105,8 @@ export async function findRecord({
     latitude: record.latitude,
     longitude: record.longitude,
     discoveredAt: record.discoveredAt,
-    description: record.description,
+    memo: record.memo,
     isPublic: record.isPublic,
-    tags: tags.map(({ tag }) => tag),
     photoIds: photos.map(({ id }) => id),
     updatedAt: record.updatedAt,
   }

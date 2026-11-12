@@ -24,9 +24,8 @@ export interface RecordDetail {
   readonly latitude: number
   readonly longitude: number
   readonly discoveredAt: Date
-  readonly description: string
+  readonly memo: string
   readonly isPublic: boolean
-  readonly tags: readonly string[]
   readonly photoIds: readonly string[]
   readonly updatedAt: Date
 }
@@ -37,8 +36,7 @@ export interface RecordInput {
   readonly latitude: number
   readonly longitude: number
   readonly discoveredAt: Date
-  readonly description: string
-  readonly tags: readonly string[]
+  readonly memo: string
   readonly isPublic: boolean
   // 新たに追加する写真
   readonly photos: readonly File[]
