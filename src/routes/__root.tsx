@@ -61,8 +61,8 @@ function NotFoundPage() {
   return (
     <PageLayout>
       <NotFoundMessage
-        title="ページが見つかりません"
-        description="URL が間違っているか，ページが移動・削除された可能性があります．"
+        title="ここは，まだ誰も踏み入れていない場所のようです"
+        description="この先には道がありません．地図に戻って，新しい発見を探しに行きましょう．"
       />
     </PageLayout>
   )
