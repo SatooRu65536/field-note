@@ -34,10 +34,10 @@ function createRecord({
 
 const JAPAN = { west: 122, east: 154, south: 20, north: 46 }
 
-// 名古屋駅付近で約 10m 離れた2件と，東京駅付近の1件
+// 名古屋駅付近で約 3m 離れ，最大まで拡大しても重なる2件と，東京駅付近の1件
 const RECORDS = [
-  createRecord({ id: 'nagoya-1', latitude: 35.1709, longitude: 136.8815 }),
-  createRecord({ id: 'nagoya-2', latitude: 35.1710, longitude: 136.8816 }),
+  createRecord({ id: 'nagoya-1', latitude: 35.17090, longitude: 136.88150 }),
+  createRecord({ id: 'nagoya-2', latitude: 35.17092, longitude: 136.88152 }),
   createRecord({ id: 'tokyo', latitude: 35.6812, longitude: 139.7671 }),
 ]
 
@@ -70,16 +70,37 @@ describe('getRecordMapItems', () => {
     expect(cluster?.type === 'cluster' && cluster.expansionZoom).toBeGreaterThan(10)
   })
 
-  it('まとめる上限より拡大した地図では，すべての記録を1件ずつ表示する', () => {
+  it('最大まで拡大しても重なる記録は，広げて表示する記録としてまとめる', () => {
     // Arrange
     const index = createRecordClusterIndex(RECORDS)
 
     // Act
-    const items = getRecordMapItems({ index, bounds: JAPAN, zoom: CLUSTER_MAX_ZOOM + 1 })
+    const items = getRecordMapItems({ index, bounds: JAPAN, zoom: CLUSTER_MAX_ZOOM })
 
     // Assert
-    expect(items.every((item) => item.type === 'record')).toBe(true)
-    expect(items).toHaveLength(3)
+    const spider = items.find((item) => item.type === 'spider')
+    expect(spider?.type === 'spider' && spider.records.map(({ id }) => id).sort()).toEqual([
+      'nagoya-1',
+      'nagoya-2',
+    ])
+    expect(items.flatMap((item) => (item.type === 'record' ? [item.record.id] : []))).toEqual([
+      'tokyo',
+    ])
+  })
+
+  it('最大まで拡大すれば分かれる記録は，広げずに1件ずつ表示する', () => {
+    // Arrange
+    const records = [
+      createRecord({ id: 'a', latitude: 35.17, longitude: 136.88 }),
+      createRecord({ id: 'b', latitude: 35.171, longitude: 136.881 }),
+    ]
+    const index = createRecordClusterIndex(records)
+
+    // Act
+    const items = getRecordMapItems({ index, bounds: JAPAN, zoom: CLUSTER_MAX_ZOOM })
+
+    // Assert
+    expect(items.map((item) => item.type)).toEqual(['record', 'record'])
   })
 
   it('表示範囲の外の記録は含めない', () => {

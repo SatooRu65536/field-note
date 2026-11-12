@@ -1,7 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Map, useMap } from 'react-map-gl/maplibre'
 import type { MapLayerMouseEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { css } from 'styled-system/css'
@@ -25,10 +25,12 @@ import { useMapZoom } from '../hooks/useMapZoom'
 import { usePublicRecordsInBounds } from '../hooks/usePublicRecordsInBounds'
 import { loadMapView, saveMapView } from '../mapViewStorage'
 import { createRecordClusterIndex, getRecordMapItems } from '../recordClusters'
+import { calculateSpiderOffsets } from '../spiderLayout'
 import { RecordClusterMarker } from './RecordClusterMarker'
 import { CurrentPositionMarker } from './CurrentPositionMarker'
 import { MapControls } from './MapControls'
 import { RecordPin } from './RecordPin'
+import { SpiderLegs } from './SpiderLegs'
 
 // 地図の読み込み前に，記録をまとめるときの範囲
 const WORLD_BOUNDS = { west: -180, east: 180, south: -90, north: 90 }
@@ -121,7 +123,7 @@ export function RecordMapCanvas({
 
   return (
     // ピンの z-index が地図の外の検索欄などより手前に出ないよう，重なり順をこの中に閉じ込める
-    <div className={css({ position: 'absolute', inset: '0', isolation: 'isolate' })}>
+    <div className={css({ position: 'absolute', inset: '0', zIndex: 0, isolation: 'isolate' })}>
       <Map
         id={RECORD_MAP_ID}
         initialViewState={savedView ?? INITIAL_VIEW_STATE}
@@ -141,25 +143,52 @@ export function RecordMapCanvas({
         dragRotate={onLocationRightClicked === null}
       >
         {currentPosition && <CurrentPositionMarker position={currentPosition} />}
-        {mapItems.map((item) =>
-          item.type === 'cluster' ? (
-            <RecordClusterMarker
-              key={`cluster-${item.clusterId}`}
-              latitude={item.latitude}
-              longitude={item.longitude}
-              recordCount={item.recordCount}
-              onClusterSelected={() => handleClusterSelect(item)}
-            />
-          ) : (
-            <RecordPin
-              key={item.record.id}
-              record={item.record}
-              color={colorByCategoryId.get(item.record.categoryId) ?? DEFAULT_PIN_COLOR}
-              isSelected={item.record.id === selectedRecordId}
-              onRecordSelected={onRecordSelected}
-            />
-          ),
-        )}
+        {mapItems.map((item) => {
+          switch (item.type) {
+            case 'cluster':
+              return (
+                <RecordClusterMarker
+                  key={`cluster-${item.clusterId}`}
+                  latitude={item.latitude}
+                  longitude={item.longitude}
+                  recordCount={item.recordCount}
+                  onClusterSelected={() => handleClusterSelect(item)}
+                />
+              )
+            case 'spider': {
+              const offsets = calculateSpiderOffsets(item.records.length)
+              return (
+                <Fragment key={`spider-${item.clusterId}`}>
+                  <SpiderLegs
+                    latitude={item.latitude}
+                    longitude={item.longitude}
+                    offsets={offsets}
+                  />
+                  {item.records.map((record, index) => (
+                    <RecordPin
+                      key={record.id}
+                      record={record}
+                      color={colorByCategoryId.get(record.categoryId) ?? DEFAULT_PIN_COLOR}
+                      isSelected={record.id === selectedRecordId}
+                      offset={offsets[index]}
+                      onRecordSelected={onRecordSelected}
+                    />
+                  ))}
+                </Fragment>
+              )
+            }
+            case 'record':
+              return (
+                <RecordPin
+                  key={item.record.id}
+                  record={item.record}
+                  color={colorByCategoryId.get(item.record.categoryId) ?? DEFAULT_PIN_COLOR}
+                  isSelected={item.record.id === selectedRecordId}
+                  onRecordSelected={onRecordSelected}
+                />
+              )
+          }
+        })}
       </Map>
       <MapControls onCurrentPositionRequested={onCurrentPositionRequested} />
     </div>

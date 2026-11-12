@@ -1,9 +1,10 @@
 import Supercluster from 'supercluster'
 
 import type { Bounds, RecordSummary } from '@/integrations/field-note-api/records'
+import { MAX_ZOOM } from '@/integrations/maplibre/constants'
 
-// これより拡大した地図では，近い記録もまとめずに1件ずつ表示する
-export const CLUSTER_MAX_ZOOM = 16
+// 地図の最大ズームまでまとめ，最大まで拡大しても重なる記録を見分けられるようにする
+export const CLUSTER_MAX_ZOOM = MAX_ZOOM
 
 // ピンの大きさに合わせ，重なって見える距離の記録をまとめる
 const CLUSTER_RADIUS_PIXELS = 50
@@ -24,6 +25,14 @@ export type RecordMapItem =
       readonly recordCount: number
       // まとまりを押したときに，中の記録が分かれて見えるズームレベル
       readonly expansionZoom: number
+    }
+  | {
+      // 最大まで拡大しても重なるため，中心から広げて表示する記録
+      readonly type: 'spider'
+      readonly clusterId: number
+      readonly latitude: number
+      readonly longitude: number
+      readonly records: readonly RecordSummary[]
     }
 
 /**
@@ -51,7 +60,7 @@ export function createRecordClusterIndex(records: readonly RecordSummary[]): Rec
  * @param index createRecordClusterIndex で作成した索引
  * @param bounds 地図の表示範囲
  * @param zoom 地図のズームレベル
- * @returns 1件ずつ表示する記録と，まとめて表示する記録のまとまり
+ * @returns 1件ずつ表示する記録，まとめて表示する記録のまとまり，最大まで拡大しても重なるため広げて表示する記録
  */
 export function getRecordMapItems({
   index,
@@ -70,13 +79,24 @@ export function getRecordMapItems({
         return { type: 'record', record: feature.properties.record }
       }
       const clusterId = feature.properties.cluster_id
+      const expansionZoom = index.getClusterExpansionZoom(clusterId)
+      // 最大まで拡大しても分かれないまとまりは，最大まで拡大したときだけ広げ，それまでは件数で表示する
+      if (expansionZoom > CLUSTER_MAX_ZOOM && Math.floor(zoom) >= CLUSTER_MAX_ZOOM) {
+        return {
+          type: 'spider',
+          clusterId,
+          latitude,
+          longitude,
+          records: index.getLeaves(clusterId, Infinity).map(({ properties }) => properties.record),
+        }
+      }
       return {
         type: 'cluster',
         clusterId,
         latitude,
         longitude,
         recordCount: feature.properties.point_count,
-        expansionZoom: index.getClusterExpansionZoom(clusterId),
+        expansionZoom,
       }
     })
 }

@@ -24,7 +24,8 @@ export function RecordPreviewCard({ record, category, onClosed }: RecordPreviewC
         left: '4',
         right: '4',
         bottom: '8',
-        zIndex: 1,
+        // 検索欄（2）や絞り込みより手前に表示する
+        zIndex: 3,
         maxW: '420px',
         mx: 'auto',
         display: 'flex',
