@@ -62,7 +62,7 @@ function NotFoundPage() {
     <PageLayout>
       <NotFoundMessage
         title="ここは，まだ誰も踏み入れていない場所のようです"
-        description="この先には道がありません．地図に戻って，新しい発見を探しに行きましょう．"
+        description="地図に戻って，新しい発見を探しに行きましょう．"
       />
     </PageLayout>
   )
