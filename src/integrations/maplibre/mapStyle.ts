@@ -150,12 +150,16 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
  * @returns 変換したスタイル
  */
 export function customizeMapStyle(style: StyleSpecification): StyleSpecification {
+  const layers = style.layers
+    .filter((layer) => !HIDDEN_LAYER_IDS.includes(layer.id))
+    .map(customizeLayer)
   return {
     ...style,
-    // 駅のラベルを他のラベルと同じく最前面に描くため，元のレイヤーの後ろに加える
+    // 駅は他のラベルと同じく元のレイヤーより手前に，県境は他のどのレイヤーにも隠れないよう最前面に描く
     layers: [
-      ...style.layers.filter((layer) => !HIDDEN_LAYER_IDS.includes(layer.id)).map(customizeLayer),
+      ...layers.filter((layer) => layer.id !== PREFECTURE_BOUNDARY_LAYER_ID),
       ...TRANSIT_LAYERS,
+      ...layers.filter((layer) => layer.id === PREFECTURE_BOUNDARY_LAYER_ID),
     ],
   }
 }

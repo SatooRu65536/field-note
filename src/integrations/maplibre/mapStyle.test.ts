@@ -126,12 +126,12 @@ describe('customizeMapStyle の駅と路線', () => {
     })
   })
 
-  it('地下鉄の路線と駅のレイヤーを最後に加える', () => {
+  it('地下鉄の路線と駅のレイヤーを，県境を除く元のレイヤーの後ろに加える', () => {
     // Act
     const style = customizeMapStyle(STYLE)
 
     // Assert
-    expect(style.layers.slice(-3).map(({ id }) => id)).toEqual([
+    expect(style.layers.slice(-4, -1).map(({ id }) => id)).toEqual([
       'field_note_subway',
       'field_note_station_dot',
       'field_note_station_label',
@@ -152,6 +152,14 @@ describe('customizeMapStyle の地下鉄', () => {
 })
 
 describe('customizeMapStyle の県境', () => {
+  it('県境を最前面に描く', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+
+    // Assert
+    expect(style.layers.at(-1)?.id).toBe('boundary_state')
+  })
+
   it('県境を濃い色の太い実線にする', () => {
     // Act
     const style = customizeMapStyle(STYLE)
