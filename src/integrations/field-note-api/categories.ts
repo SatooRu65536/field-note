@@ -21,7 +21,7 @@ export function categoriesQueryOptions() {
   return queryOptions({
     queryKey: QUERY_KEYS.categories,
     queryFn: () => getCategories(),
-    // カテゴリはマイグレーションでのみ変わるため，再取得しない
+    // カテゴリは管理画面でしか変わらず，変更時はクエリを無効化するため，自動では再取得しない
     staleTime: Infinity,
   })
 }

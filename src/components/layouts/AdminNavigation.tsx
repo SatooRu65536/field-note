@@ -24,6 +24,9 @@ export function AdminNavigation() {
       <Link to="/admin/records/new" className={LINK_STYLES} activeProps={ACTIVE_PROPS}>
         記録を追加
       </Link>
+      <Link to="/admin/categories" className={LINK_STYLES} activeProps={ACTIVE_PROPS}>
+        カテゴリ
+      </Link>
     </nav>
   )
 }

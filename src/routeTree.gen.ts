@@ -14,6 +14,7 @@ import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as PhotosPhotoIdRouteImport } from './routes/photos/$photoId'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
+import { Route as AdminCategoriesIndexRouteImport } from './routes/admin/categories/index'
 import { Route as AdminRecordsIndexRouteImport } from './routes/admin/records/index'
 import { Route as AdminRecordsNewRouteImport } from './routes/admin/records/new'
 import { Route as AdminRecordsRecordIdEditRouteImport } from './routes/admin/records/$recordId/edit'
@@ -43,6 +44,11 @@ const RecordsRecordIdRoute = RecordsRecordIdRouteImport.update({
   path: '/records/$recordId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCategoriesIndexRoute = AdminCategoriesIndexRouteImport.update({
+  id: '/categories/',
+  path: '/categories/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminRecordsIndexRoute = AdminRecordsIndexRouteImport.update({
   id: '/records/',
   path: '/records/',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/records/new': typeof AdminRecordsNewRoute
+  '/admin/categories/': typeof AdminCategoriesIndexRoute
   '/admin/records/': typeof AdminRecordsIndexRoute
   '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/admin': typeof AdminIndexRoute
   '/admin/records/new': typeof AdminRecordsNewRoute
+  '/admin/categories': typeof AdminCategoriesIndexRoute
   '/admin/records': typeof AdminRecordsIndexRoute
   '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/records/new': typeof AdminRecordsNewRoute
+  '/admin/categories/': typeof AdminCategoriesIndexRoute
   '/admin/records/': typeof AdminRecordsIndexRoute
   '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/records/$recordId'
     | '/admin/'
     | '/admin/records/new'
+    | '/admin/categories/'
     | '/admin/records/'
     | '/admin/records/$recordId/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/records/$recordId'
     | '/admin'
     | '/admin/records/new'
+    | '/admin/categories'
     | '/admin/records'
     | '/admin/records/$recordId/edit'
   id:
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/records/$recordId'
     | '/admin/'
     | '/admin/records/new'
+    | '/admin/categories/'
     | '/admin/records/'
     | '/admin/records/$recordId/edit'
   fileRoutesById: FileRoutesById
@@ -166,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecordsRecordIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/categories/': {
+      id: '/admin/categories/'
+      path: '/categories'
+      fullPath: '/admin/categories/'
+      preLoaderRoute: typeof AdminCategoriesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/records/': {
       id: '/admin/records/'
       path: '/records'
@@ -193,6 +212,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AdminRecordsNewRoute: typeof AdminRecordsNewRoute
+  AdminCategoriesIndexRoute: typeof AdminCategoriesIndexRoute
   AdminRecordsIndexRoute: typeof AdminRecordsIndexRoute
   AdminRecordsRecordIdEditRoute: typeof AdminRecordsRecordIdEditRoute
 }
@@ -200,6 +220,7 @@ interface AdminRouteRouteChildren {
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AdminRecordsNewRoute: AdminRecordsNewRoute,
+  AdminCategoriesIndexRoute: AdminCategoriesIndexRoute,
   AdminRecordsIndexRoute: AdminRecordsIndexRoute,
   AdminRecordsRecordIdEditRoute: AdminRecordsRecordIdEditRoute,
 }
