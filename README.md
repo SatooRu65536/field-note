@@ -11,7 +11,7 @@
 | フレームワーク | TanStack Start（SSR・サーバー関数） |
 | データ取得 | TanStack Query |
 | スタイル | Panda CSS |
-| 地図 | MapLibre GL JS，react-map-gl，PMTiles |
+| 地図 | MapLibre GL JS，react-map-gl，CARTO のベースマップ |
 | データベース | Cloudflare D1（Drizzle ORM） |
 | 写真の保存 | Cloudflare R2 |
 | 管理画面の保護 | Cloudflare Access |
@@ -40,22 +40,14 @@ pnpm run dev
 
 | 変数名 | 設定先 | 説明 |
 | --- | --- | --- |
-| `VITE_PMTILES_URL` | `.env.local`（ビルド時） | 地図タイルの PMTiles の URL．未設定の場合，地図タイルを表示しない |
 | `CF_ACCESS_TEAM_DOMAIN` | Workers のシークレット | Cloudflare Access のチームドメイン（例：`https://<team>.cloudflareaccess.com`） |
 | `CF_ACCESS_AUD` | Workers のシークレット | 管理画面を保護する Cloudflare Access アプリケーションの AUD タグ |
 
-`.env.example` を `.env.local` にコピーして値を設定すること．
-
 ### 地図タイル
 
-地図タイルは，[Planetiler](https://github.com/onthegomap/planetiler) の OpenMapTiles プロファイルで OSM のデータから生成した PMTiles を使う．
-
-```bash
-java -jar planetiler.jar --osm-path=<OSM PBF ファイル> --output=map.pmtiles --minzoom=4 --maxzoom=16 --download
-```
-
-生成した PMTiles を R2 などに配置し，その URL を `VITE_PMTILES_URL` に設定すること．
-配置先では，アプリのオリジンからの `GET`・`HEAD` と `Range` ヘッダーを CORS で許可すること．
+地図タイルは，CARTO のベースマップ（Positron のラベルなし版）を使う．
+スタイルの URL は [src/integrations/maplibre/mapStyle.ts](src/integrations/maplibre/mapStyle.ts) で指定している．
+利用条件は CARTO の規約を確認すること．
 
 ## スクリプト
 

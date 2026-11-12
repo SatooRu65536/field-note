@@ -14,10 +14,7 @@ import {
   MAX_ZOOM,
   MIN_ZOOM,
 } from '@/integrations/maplibre/constants'
-import { MAP_STYLE } from '@/integrations/maplibre/mapStyle'
-import { setupMaplibre } from '@/integrations/maplibre/setupMaplibre'
-
-setupMaplibre()
+import { MAP_STYLE_URL } from '@/integrations/maplibre/mapStyle'
 
 const LOCATION_PICKER_MAP_ID = 'location-picker-map'
 
@@ -56,7 +53,7 @@ export function LocationPickerMap({ location, onLocationChanged }: LocationPicke
           ? { latitude: location.latitude, longitude: location.longitude, zoom: FOCUS_ZOOM }
           : INITIAL_VIEW_STATE
       }
-      mapStyle={MAP_STYLE}
+      mapStyle={MAP_STYLE_URL}
       style={{ width: '100%', height: '100%' }}
       minZoom={MIN_ZOOM}
       maxZoom={MAX_ZOOM}

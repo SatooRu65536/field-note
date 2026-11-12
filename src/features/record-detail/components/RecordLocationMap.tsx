@@ -4,10 +4,7 @@ import { Map, Marker } from 'react-map-gl/maplibre'
 
 import { MapPin } from '@/components/ui/MapPin'
 import { FOCUS_ZOOM, MAX_ZOOM, MIN_ZOOM } from '@/integrations/maplibre/constants'
-import { MAP_STYLE } from '@/integrations/maplibre/mapStyle'
-import { setupMaplibre } from '@/integrations/maplibre/setupMaplibre'
-
-setupMaplibre()
+import { MAP_STYLE_URL } from '@/integrations/maplibre/mapStyle'
 
 interface RecordLocationMapProps {
   readonly latitude: number
@@ -19,7 +16,7 @@ export function RecordLocationMap({ latitude, longitude, color }: RecordLocation
   return (
     <Map
       initialViewState={{ latitude, longitude, zoom: FOCUS_ZOOM }}
-      mapStyle={MAP_STYLE}
+      mapStyle={MAP_STYLE_URL}
       style={{ width: '100%', height: '100%' }}
       minZoom={MIN_ZOOM}
       maxZoom={MAX_ZOOM}

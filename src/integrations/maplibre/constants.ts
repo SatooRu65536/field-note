@@ -12,8 +12,8 @@ export const FOCUS_ZOOM = 14
 
 export const MIN_ZOOM = 4
 
-// Planetiler が生成するタイルの最大ズームレベル
-export const MAX_ZOOM = 16
+// 発見場所を建物の単位で確かめられる程度まで拡大できるようにする
+export const MAX_ZOOM = 18
 
 export const MAP_TRANSITION_DURATION_MS = 500
 
