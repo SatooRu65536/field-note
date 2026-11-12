@@ -13,3 +13,6 @@ __unconfig*
 todos.json
 
 /z-*/
+
+# Panda CSS
+styled-system

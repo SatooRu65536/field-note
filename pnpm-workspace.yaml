@@ -4,5 +4,6 @@ allowBuilds:
   sharp: true
   workerd: true
   better-sqlite3: true
+  '@parcel/watcher': false
 packages:
   - .
