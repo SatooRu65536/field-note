@@ -10,17 +10,21 @@ import { QUERY_KEYS } from './queryKeys'
 
 export type { Bounds, RecordDetail, RecordSummary }
 
-const boundsSchema = z.object({
-  west: z.number().min(-180).max(180),
-  east: z.number().min(-180).max(180),
-  south: z.number().min(-90).max(90),
-  north: z.number().min(-90).max(90),
-})
+const BOUNDS_SCHEMA = z
+  .object({
+    west: z.number().min(-180).max(180),
+    east: z.number().min(-180).max(180),
+    south: z.number().min(-90).max(90),
+    north: z.number().min(-90).max(90),
+  })
+  .refine(({ west, east, south, north }) => west <= east && south <= north, {
+    message: '範囲の西端・南端は東端・北端以下で指定してください',
+  })
 
 const getPublicRecordsInBounds = createServerFn({ method: 'GET' })
   .validator(
     z.object({
-      bounds: boundsSchema,
+      bounds: BOUNDS_SCHEMA,
       categoryIds: z.array(z.string()).max(50),
     }),
   )
@@ -73,13 +77,4 @@ export function publicRecordQueryOptions(recordId: string) {
     queryKey: [...QUERY_KEYS.publicRecords, 'detail', recordId],
     queryFn: () => getPublicRecord({ data: { recordId } }),
   })
-}
-
-/**
- * 記録の名前を表示用に変換する
- * @param name 記録の名前
- * @returns 名前．名前が分からない記録の場合は「名前不明」
- */
-export function formatRecordName(name: string | null): string {
-  return name ?? '名前不明'
 }

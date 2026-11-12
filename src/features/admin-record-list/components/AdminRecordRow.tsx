@@ -6,7 +6,7 @@ import { DotLabel } from '@/components/ui/DotLabel'
 import { buttonRecipe } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
-import { formatRecordName } from '@/integrations/field-note-api/records'
+import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 import { formatDateTime } from '@/integrations/intl/formatDateTime'
 

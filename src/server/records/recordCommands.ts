@@ -14,6 +14,12 @@ interface UploadedPhoto {
   readonly contentType: string
 }
 
+/**
+ * 写真を保存する R2 のオブジェクトキーを作成する
+ * @param recordId 写真が属する記録の ID
+ * @param photoId 写真の ID
+ * @returns オブジェクトキー
+ */
 function createPhotoObjectKey({
   recordId,
   photoId,
@@ -24,6 +30,25 @@ function createPhotoObjectKey({
   return `records/${recordId}/${photoId}`
 }
 
+/**
+ * 削除後の後片付けとして R2 の写真を削除する．失敗しても例外を投げずログに残す
+ * @param objectKeys 削除するオブジェクトキー
+ */
+async function deletePhotosQuietly(objectKeys: readonly string[]): Promise<void> {
+  try {
+    await deletePhotos(objectKeys)
+  } catch (error) {
+    console.error('R2 の写真の削除に失敗しました', { objectKeys, error })
+  }
+}
+
+/**
+ * 写真を1枚ずつ R2 に保存する
+ * @param recordId 写真が属する記録の ID
+ * @param photos 保存する写真
+ * @returns 保存した写真
+ * @throws R2 への保存に失敗した場合．それまでに保存した写真は削除してから投げる
+ */
 async function uploadPhotos({
   recordId,
   photos,
@@ -31,17 +56,28 @@ async function uploadPhotos({
   recordId: string
   photos: readonly File[]
 }): Promise<readonly UploadedPhoto[]> {
-  return Promise.all(
-    photos.map(async (file) => {
-      const id = crypto.randomUUID()
-      const objectKey = createPhotoObjectKey({ recordId, photoId: id })
+  // Workers のメモリ上限（128 MB）に収まるよう，写真のバイト列を同時に複数読み込まない
+  return photos.reduce<Promise<readonly UploadedPhoto[]>>(async (previous, file) => {
+    const uploaded = await previous
+    const id = crypto.randomUUID()
+    const objectKey = createPhotoObjectKey({ recordId, photoId: id })
+    try {
       await putPhoto({ objectKey, file })
-      return { id, objectKey, contentType: file.type }
-    }),
-  )
+    } catch (error) {
+      await deletePhotosQuietly(uploaded.map((photo) => photo.objectKey))
+      throw error
+    }
+    return [...uploaded, { id, objectKey, contentType: file.type }]
+  }, Promise.resolve([]))
 }
 
-async function existsCategory({
+/**
+ * カテゴリが存在するか確かめる
+ * @param db Drizzle のクライアント
+ * @param categoryId カテゴリの ID
+ * @returns 存在する場合に true
+ */
+async function hasCategory({
   db,
   categoryId,
 }: {
@@ -55,16 +91,29 @@ async function existsCategory({
   return category !== undefined
 }
 
+/**
+ * 記録に付けるタグの行を作成する
+ * @param recordId 記録の ID
+ * @param tags タグ
+ * @returns record_tags に挿入する行
+ */
 function createTagRows({
   recordId,
   tags,
 }: {
   recordId: string
   tags: readonly string[]
-}): { recordId: string; tag: string }[] {
+}): readonly { readonly recordId: string; readonly tag: string }[] {
   return tags.map((tag) => ({ recordId, tag }))
 }
 
+/**
+ * 保存した写真の行を，指定した表示順から連番で作成する
+ * @param recordId 記録の ID
+ * @param photos 保存した写真
+ * @param firstSortOrder 最初の写真の表示順
+ * @returns record_photos に挿入する行
+ */
 function createPhotoRows({
   recordId,
   photos,
@@ -73,7 +122,7 @@ function createPhotoRows({
   recordId: string
   photos: readonly UploadedPhoto[]
   firstSortOrder: number
-}): (typeof recordPhotos.$inferInsert)[] {
+}): readonly (typeof recordPhotos.$inferInsert)[] {
   return photos.map((photo, index) => ({
     id: photo.id,
     recordId,
@@ -83,7 +132,12 @@ function createPhotoRows({
   }))
 }
 
-// D1 の batch はトランザクションとして実行されるため，記録と写真・タグの更新をまとめて反映する
+/**
+ * クエリをまとめて1つのトランザクションとして実行する．クエリが空の場合は何もしない
+ * @param db Drizzle のクライアント
+ * @param queries 実行するクエリ
+ * @throws いずれかのクエリが失敗した場合．すべての変更は取り消される
+ */
 async function runInBatch({
   db,
   queries,
@@ -101,6 +155,7 @@ async function runInBatch({
  * @param db Drizzle のクライアント
  * @param input 登録する内容
  * @returns 登録した記録の ID．カテゴリが存在しない場合はエラー
+ * @throws D1・R2 への保存に失敗した場合
  */
 export async function createRecord({
   db,
@@ -109,7 +164,7 @@ export async function createRecord({
   db: Database
   input: RecordInput
 }): Promise<RecordCommandResult> {
-  if (!(await existsCategory({ db, categoryId: input.categoryId }))) {
+  if (!(await hasCategory({ db, categoryId: input.categoryId }))) {
     return { ok: false, error: 'カテゴリが存在しません' }
   }
 
@@ -132,13 +187,13 @@ export async function createRecord({
           description: input.description,
           isPublic: input.isPublic,
         }),
-        ...(tagRows.length > 0 ? [db.insert(recordTags).values(tagRows)] : []),
-        ...(photoRows.length > 0 ? [db.insert(recordPhotos).values(photoRows)] : []),
+        ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
+        ...(photoRows.length > 0 ? [db.insert(recordPhotos).values([...photoRows])] : []),
       ],
     })
   } catch (error) {
     // 記録が保存されなかった場合，参照されない写真が R2 に残らないよう削除する
-    await deletePhotos(uploadedPhotos.map(({ objectKey }) => objectKey))
+    await deletePhotosQuietly(uploadedPhotos.map(({ objectKey }) => objectKey))
     throw error
   }
 
@@ -151,6 +206,7 @@ export async function createRecord({
  * @param recordId 更新する記録の ID
  * @param input 更新後の内容
  * @returns 更新した記録の ID．記録・カテゴリが存在しない場合や写真の枚数が上限を超える場合はエラー
+ * @throws D1・R2 への保存に失敗した場合
  */
 export async function updateRecord({
   db,
@@ -166,7 +222,7 @@ export async function updateRecord({
     .from(records)
     .where(eq(records.id, recordId))
   if (!record) return { ok: false, error: '記録が存在しません' }
-  if (!(await existsCategory({ db, categoryId: input.categoryId }))) {
+  if (!(await hasCategory({ db, categoryId: input.categoryId }))) {
     return { ok: false, error: 'カテゴリが存在しません' }
   }
 
@@ -209,7 +265,7 @@ export async function updateRecord({
           })
           .where(eq(records.id, recordId)),
         db.delete(recordTags).where(eq(recordTags.recordId, recordId)),
-        ...(tagRows.length > 0 ? [db.insert(recordTags).values(tagRows)] : []),
+        ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
         ...(removedPhotoIds.length > 0
           ? [
               db
@@ -222,15 +278,16 @@ export async function updateRecord({
                 ),
             ]
           : []),
-        ...(photoRows.length > 0 ? [db.insert(recordPhotos).values(photoRows)] : []),
+        ...(photoRows.length > 0 ? [db.insert(recordPhotos).values([...photoRows])] : []),
       ],
     })
   } catch (error) {
-    await deletePhotos(uploadedPhotos.map(({ objectKey }) => objectKey))
+    await deletePhotosQuietly(uploadedPhotos.map(({ objectKey }) => objectKey))
     throw error
   }
 
-  await deletePhotos(removedPhotos.map(({ objectKey }) => objectKey))
+  // 記録の更新は確定しているため，写真の削除に失敗しても保存は成功として扱う
+  await deletePhotosQuietly(removedPhotos.map(({ objectKey }) => objectKey))
   return { ok: true, recordId }
 }
 
@@ -239,6 +296,7 @@ export async function updateRecord({
  * @param db Drizzle のクライアント
  * @param recordId 削除する記録の ID
  * @returns 削除した記録の ID．記録が存在しない場合はエラー
+ * @throws D1 からの削除に失敗した場合
  */
 export async function deleteRecord({
   db,
@@ -259,6 +317,7 @@ export async function deleteRecord({
     .returning({ id: records.id })
   if (deleted.length === 0) return { ok: false, error: '記録が存在しません' }
 
-  await deletePhotos(photos.map(({ objectKey }) => objectKey))
+  // 記録の削除は確定しているため，写真の削除に失敗しても削除は成功として扱う
+  await deletePhotosQuietly(photos.map(({ objectKey }) => objectKey))
   return { ok: true, recordId }
 }

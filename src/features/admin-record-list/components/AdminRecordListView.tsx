@@ -3,7 +3,7 @@ import { css } from 'styled-system/css'
 
 import { buttonRecipe } from '@/components/ui/styles'
 import type { Category } from '@/integrations/field-note-api/categories'
-import { formatRecordName } from '@/integrations/field-note-api/records'
+import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 
 import type { CategoryCount } from '../categoryCounts'

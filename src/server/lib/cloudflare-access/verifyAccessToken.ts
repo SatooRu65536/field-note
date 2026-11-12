@@ -3,14 +3,19 @@ import { createRemoteJWKSet, jwtVerify } from 'jose'
 type RemoteJwkSet = ReturnType<typeof createRemoteJWKSet>
 
 // 公開鍵の取得結果を Worker のインスタンス内で使い回すため，チームドメインごとに保持する
-const jwkSets = new Map<string, RemoteJwkSet>()
+const JWK_SETS = new Map<string, RemoteJwkSet>()
 
+/**
+ * チームドメインの公開鍵を取得する関数を返す
+ * @param teamDomain Cloudflare Access のチームドメイン
+ * @returns jose の jwtVerify に渡す公開鍵の取得関数
+ */
 function getJwkSet(teamDomain: string): RemoteJwkSet {
-  const cached = jwkSets.get(teamDomain)
+  const cached = JWK_SETS.get(teamDomain)
   if (cached) return cached
 
   const jwkSet = createRemoteJWKSet(new URL('/cdn-cgi/access/certs', teamDomain))
-  jwkSets.set(teamDomain, jwkSet)
+  JWK_SETS.set(teamDomain, jwkSet)
   return jwkSet
 }
 

@@ -8,13 +8,14 @@ import type { Bounds, RecordDetail, RecordSummary } from './types'
 // 地図に一度に表示するピンの上限．表示範囲が広すぎる場合に応答が肥大化するのを防ぐ
 const MAX_RECORDS_IN_BOUNDS = 500
 
-const thumbnailPhotoId = sql<string | null>`(
+// 一覧のサムネイルに使う，表示順が最初の写真の ID
+const THUMBNAIL_PHOTO_ID = sql<string | null>`(
   select ${recordPhotos.id} from ${recordPhotos}
   where ${recordPhotos.recordId} = ${records.id}
   order by ${recordPhotos.sortOrder} limit 1
 )`
 
-const summaryColumns = {
+const SUMMARY_COLUMNS = {
   id: records.id,
   name: records.name,
   categoryId: records.categoryId,
@@ -22,7 +23,7 @@ const summaryColumns = {
   longitude: records.longitude,
   discoveredAt: records.discoveredAt,
   isPublic: records.isPublic,
-  thumbnailPhotoId,
+  thumbnailPhotoId: THUMBNAIL_PHOTO_ID,
 }
 
 /**
@@ -55,7 +56,7 @@ export async function listRecordsInBounds({
   ]
 
   return db
-    .select(summaryColumns)
+    .select(SUMMARY_COLUMNS)
     .from(records)
     .where(and(...conditions))
     .orderBy(desc(records.discoveredAt))
@@ -68,7 +69,7 @@ export async function listRecordsInBounds({
  * @returns 非公開を含む記録の一覧
  */
 export async function listAllRecords(db: Database): Promise<readonly RecordSummary[]> {
-  return db.select(summaryColumns).from(records).orderBy(desc(records.discoveredAt))
+  return db.select(SUMMARY_COLUMNS).from(records).orderBy(desc(records.discoveredAt))
 }
 
 /**

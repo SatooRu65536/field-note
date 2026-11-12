@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 import { DotLabel } from '@/components/ui/DotLabel'
 import type { Category } from '@/integrations/field-note-api/categories'
-import { formatRecordName } from '@/integrations/field-note-api/records'
+import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordDetail } from '@/integrations/field-note-api/records'
 import { formatDateTime } from '@/integrations/intl/formatDateTime'
 

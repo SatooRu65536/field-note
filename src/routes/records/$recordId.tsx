@@ -3,10 +3,8 @@ import { createFileRoute, notFound } from '@tanstack/react-router'
 import { PageLayout } from '@/components/layouts/PageLayout'
 import { RecordDetail, RecordNotFound } from '@/features/record-detail'
 import { categoriesQueryOptions } from '@/integrations/field-note-api/categories'
-import {
-  formatRecordName,
-  publicRecordQueryOptions,
-} from '@/integrations/field-note-api/records'
+import { formatRecordName } from '@/integrations/field-note-api/recordName'
+import { publicRecordQueryOptions } from '@/integrations/field-note-api/records'
 
 export const Route = createFileRoute('/records/$recordId')({
   loader: async ({ context, params }) => {

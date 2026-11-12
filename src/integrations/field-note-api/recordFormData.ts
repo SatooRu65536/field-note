@@ -4,14 +4,13 @@ import {
   ACCEPTED_PHOTO_TYPES,
   MAX_PHOTO_BYTES,
   MAX_PHOTO_COUNT,
+  MAX_TOTAL_PHOTO_BYTES,
 } from '@/constants/photos'
 
 import { MAX_TAG_COUNT, MAX_TAG_LENGTH, normalizeTags } from './tags'
 
-// 名前の上限文字数
 export const MAX_NAME_LENGTH = 100
 
-// 説明の上限文字数
 export const MAX_DESCRIPTION_LENGTH = 5000
 
 export interface RecordPayload {
@@ -54,9 +53,12 @@ export function createRecordFormData(payload: RecordPayload): FormData {
   return formData
 }
 
-const coordinateSchema = z.string().trim().min(1).pipe(z.coerce.number())
+// 正規化前のタグの上限数．正規化後の上限 MAX_TAG_COUNT とは別に，過大な入力を早めに拒否する
+const MAX_RAW_TAG_COUNT = 100
 
-const fieldsSchema = z.object({
+const COORDINATE_SCHEMA = z.string().trim().min(1, '発見場所を指定してください').pipe(z.coerce.number())
+
+const FIELDS_SCHEMA = z.object({
   recordId: z.string().min(1).optional(),
   name: z
     .string()
@@ -64,11 +66,11 @@ const fieldsSchema = z.object({
     .max(MAX_NAME_LENGTH, `名前は ${MAX_NAME_LENGTH} 文字以内で入力してください`)
     .transform((name) => (name === '' ? null : name)),
   categoryId: z.string().min(1, 'カテゴリを選択してください'),
-  latitude: coordinateSchema.pipe(
-    z.number().min(-90).max(90, '緯度は -90 から 90 の範囲で指定してください'),
+  latitude: COORDINATE_SCHEMA.pipe(
+    z.number().min(-90, '緯度は -90 から 90 の範囲で指定してください').max(90, '緯度は -90 から 90 の範囲で指定してください'),
   ),
-  longitude: coordinateSchema.pipe(
-    z.number().min(-180).max(180, '経度は -180 から 180 の範囲で指定してください'),
+  longitude: COORDINATE_SCHEMA.pipe(
+    z.number().min(-180, '経度は -180 から 180 の範囲で指定してください').max(180, '経度は -180 から 180 の範囲で指定してください'),
   ),
   discoveredAt: z.iso
     .datetime({ offset: true, message: '発見日時が不正です' })
@@ -79,25 +81,28 @@ const fieldsSchema = z.object({
       MAX_DESCRIPTION_LENGTH,
       `説明は ${MAX_DESCRIPTION_LENGTH} 文字以内で入力してください`,
     ),
-  isPublic: z.enum(['true', 'false']).transform((value) => value === 'true'),
+  isPublic: z
+    .enum(['true', 'false'], { message: '公開設定が不正です' })
+    .transform((value) => value === 'true'),
   tags: z
     .array(
       z.string().max(MAX_TAG_LENGTH, `タグは ${MAX_TAG_LENGTH} 文字以内で入力してください`),
     )
+    .max(MAX_RAW_TAG_COUNT, `タグは ${MAX_TAG_COUNT} 個までです`)
     .transform(normalizeTags)
     .pipe(
       z.array(z.string()).max(MAX_TAG_COUNT, `タグは ${MAX_TAG_COUNT} 個までです`),
     ),
-  removedPhotoIds: z.array(z.string().min(1)),
+  removedPhotoIds: z.array(z.string().min(1)).max(MAX_PHOTO_COUNT),
 })
 
-const acceptedPhotoTypes: readonly string[] = ACCEPTED_PHOTO_TYPES
+const ACCEPTED_PHOTO_TYPE_LIST: readonly string[] = ACCEPTED_PHOTO_TYPES
 
-const photosSchema = z
+const PHOTOS_SCHEMA = z
   .array(
     z
       .instanceof(File)
-      .refine((file) => acceptedPhotoTypes.includes(file.type), {
+      .refine((file) => ACCEPTED_PHOTO_TYPE_LIST.includes(file.type), {
         message: '写真は JPEG・PNG・WebP・AVIF のいずれかを選択してください',
       })
       .refine((file) => file.size <= MAX_PHOTO_BYTES, {
@@ -105,8 +110,24 @@ const photosSchema = z
       }),
   )
   .max(MAX_PHOTO_COUNT, `写真は ${MAX_PHOTO_COUNT} 枚までです`)
+  .refine(
+    (files) => files.reduce((total, file) => total + file.size, 0) <= MAX_TOTAL_PHOTO_BYTES,
+    { message: `一度に保存できる写真は合計 ${MAX_TOTAL_PHOTO_BYTES / 1024 / 1024} MB までです` },
+  )
 
-function getOptionalString(formData: FormData, key: string): string | undefined {
+/**
+ * FormData から文字列の値を取り出す
+ * @param formData 取り出し元の FormData
+ * @param key 項目名
+ * @returns 値．項目がない場合やファイルの場合は undefined
+ */
+function getOptionalString({
+  formData,
+  key,
+}: {
+  formData: FormData
+  key: string
+}): string | undefined {
   const value = formData.get(key)
   return typeof value === 'string' ? value : undefined
 }
@@ -117,15 +138,15 @@ function getOptionalString(formData: FormData, key: string): string | undefined 
  * @returns 登録・更新内容．検証に失敗した場合は最初のエラーメッセージ
  */
 export function parseRecordFormData(formData: FormData): RecordPayloadParseResult {
-  const fields = fieldsSchema.safeParse({
-    recordId: getOptionalString(formData, 'recordId'),
-    name: getOptionalString(formData, 'name') ?? '',
-    categoryId: getOptionalString(formData, 'categoryId') ?? '',
-    latitude: getOptionalString(formData, 'latitude') ?? '',
-    longitude: getOptionalString(formData, 'longitude') ?? '',
-    discoveredAt: getOptionalString(formData, 'discoveredAt') ?? '',
-    description: getOptionalString(formData, 'description') ?? '',
-    isPublic: getOptionalString(formData, 'isPublic') ?? 'false',
+  const fields = FIELDS_SCHEMA.safeParse({
+    recordId: getOptionalString({ formData, key: 'recordId' }),
+    name: getOptionalString({ formData, key: 'name' }) ?? '',
+    categoryId: getOptionalString({ formData, key: 'categoryId' }) ?? '',
+    latitude: getOptionalString({ formData, key: 'latitude' }) ?? '',
+    longitude: getOptionalString({ formData, key: 'longitude' }) ?? '',
+    discoveredAt: getOptionalString({ formData, key: 'discoveredAt' }) ?? '',
+    description: getOptionalString({ formData, key: 'description' }) ?? '',
+    isPublic: getOptionalString({ formData, key: 'isPublic' }) ?? 'false',
     tags: formData.getAll('tags'),
     removedPhotoIds: formData.getAll('removedPhotoIds'),
   })
@@ -137,7 +158,7 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
   const files = formData
     .getAll('photos')
     .filter((value) => !(value instanceof File && value.size === 0))
-  const photos = photosSchema.safeParse(files)
+  const photos = PHOTOS_SCHEMA.safeParse(files)
   if (!photos.success) {
     return { ok: false, error: photos.error.issues[0]?.message ?? '写真が不正です' }
   }

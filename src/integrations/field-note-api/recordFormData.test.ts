@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import { MAX_PHOTO_BYTES, MAX_PHOTO_COUNT } from '@/constants/photos'
+import {
+  MAX_PHOTO_BYTES,
+  MAX_PHOTO_COUNT,
+  MAX_TOTAL_PHOTO_BYTES,
+} from '@/constants/photos'
 
-import { createRecordFormData, parseRecordFormData } from './recordFormData'
+import {
+  createRecordFormData,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_NAME_LENGTH,
+  parseRecordFormData,
+} from './recordFormData'
 import type { RecordPayload } from './recordFormData'
+import { MAX_TAG_COUNT, MAX_TAG_LENGTH } from './tags'
 
 function createPhoto({
   type = 'image/jpeg',
@@ -79,13 +89,13 @@ describe('parseRecordFormData', () => {
   })
 
   it.each([
-    ['緯度が範囲外', 'latitude', '90.1'],
-    ['経度が範囲外', 'longitude', '-180.1'],
-    ['緯度が空', 'latitude', ''],
-    ['発見日時が日時でない', 'discoveredAt', '2026-13-01'],
-    ['カテゴリが空', 'categoryId', ''],
-    ['公開設定が真偽値でない', 'isPublic', 'yes'],
-  ])('%s場合はエラーを返す', (_, key, value) => {
+    ['緯度が範囲外', 'latitude', '90.1', '緯度は -90 から 90 の範囲で指定してください'],
+    ['経度が範囲外', 'longitude', '-180.1', '経度は -180 から 180 の範囲で指定してください'],
+    ['緯度が空', 'latitude', '', '発見場所を指定してください'],
+    ['発見日時が日時でない', 'discoveredAt', '2026-13-01', '発見日時が不正です'],
+    ['カテゴリが空', 'categoryId', '', 'カテゴリを選択してください'],
+    ['公開設定が真偽値でない', 'isPublic', 'yes', '公開設定が不正です'],
+  ])('%s場合はエラーを返す', (_, key, value, error) => {
     // Arrange
     const formData = createRecordFormData(PAYLOAD)
     formData.set(key, value)
@@ -94,7 +104,51 @@ describe('parseRecordFormData', () => {
     const result = parseRecordFormData(formData)
 
     // Assert
-    expect(result.ok).toBe(false)
+    expect(result).toEqual({ ok: false, error })
+  })
+
+  it.each([
+    ['名前', { name: 'あ'.repeat(MAX_NAME_LENGTH) }],
+    ['説明', { description: 'あ'.repeat(MAX_DESCRIPTION_LENGTH) }],
+    ['タグの文字数', { tags: ['あ'.repeat(MAX_TAG_LENGTH)] }],
+    ['タグの個数', { tags: Array.from({ length: MAX_TAG_COUNT }, (_, index) => `タグ${index}`) }],
+  ])('%sが上限ちょうどの場合は受け付ける', (_, override) => {
+    // Arrange
+    const formData = createRecordFormData({ ...PAYLOAD, ...override })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok).toBe(true)
+  })
+
+  it.each([
+    ['名前', { name: 'あ'.repeat(MAX_NAME_LENGTH + 1) }, `名前は ${MAX_NAME_LENGTH} 文字以内で入力してください`],
+    [
+      '説明',
+      { description: 'あ'.repeat(MAX_DESCRIPTION_LENGTH + 1) },
+      `説明は ${MAX_DESCRIPTION_LENGTH} 文字以内で入力してください`,
+    ],
+    [
+      'タグの文字数',
+      { tags: ['あ'.repeat(MAX_TAG_LENGTH + 1)] },
+      `タグは ${MAX_TAG_LENGTH} 文字以内で入力してください`,
+    ],
+    [
+      'タグの個数',
+      { tags: Array.from({ length: MAX_TAG_COUNT + 1 }, (_, index) => `タグ${index}`) },
+      `タグは ${MAX_TAG_COUNT} 個までです`,
+    ],
+  ])('%sが上限を超える場合はエラーを返す', (_, override, error) => {
+    // Arrange
+    const formData = createRecordFormData({ ...PAYLOAD, ...override })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result).toEqual({ ok: false, error })
   })
 
   it('緯度・経度は境界値を受け付ける', () => {
@@ -129,7 +183,35 @@ describe('parseRecordFormData', () => {
     const result = parseRecordFormData(formData)
 
     // Assert
-    expect(result.ok).toBe(false)
+    expect(result).toEqual({ ok: false, error: `写真は ${MAX_PHOTO_COUNT} 枚までです` })
+  })
+
+  it('写真が上限サイズちょうどの場合は受け付ける', () => {
+    // Arrange
+    const photo = createPhoto({ bytes: MAX_PHOTO_BYTES })
+    const formData = createRecordFormData({ ...PAYLOAD, photos: [photo] })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok).toBe(true)
+  })
+
+  it('写真の合計サイズが上限を超える場合はエラーを返す', () => {
+    // Arrange
+    const photoCount = Math.floor(MAX_TOTAL_PHOTO_BYTES / MAX_PHOTO_BYTES) + 1
+    const photos = Array.from({ length: photoCount }, () => createPhoto({ bytes: MAX_PHOTO_BYTES }))
+    const formData = createRecordFormData({ ...PAYLOAD, photos })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result).toEqual({
+      ok: false,
+      error: `一度に保存できる写真は合計 ${MAX_TOTAL_PHOTO_BYTES / 1024 / 1024} MB までです`,
+    })
   })
 
   it('写真が上限サイズを超える場合はエラーを返す', () => {
@@ -141,7 +223,10 @@ describe('parseRecordFormData', () => {
     const result = parseRecordFormData(formData)
 
     // Assert
-    expect(result.ok).toBe(false)
+    expect(result).toEqual({
+      ok: false,
+      error: `写真は1枚あたり ${MAX_PHOTO_BYTES / 1024 / 1024} MB 以下にしてください`,
+    })
   })
 
   it('対応していない形式の写真はエラーを返す', () => {
@@ -153,6 +238,9 @@ describe('parseRecordFormData', () => {
     const result = parseRecordFormData(formData)
 
     // Assert
-    expect(result.ok).toBe(false)
+    expect(result).toEqual({
+      ok: false,
+      error: '写真は JPEG・PNG・WebP・AVIF のいずれかを選択してください',
+    })
   })
 })

@@ -14,6 +14,11 @@ import { QUERY_KEYS } from './queryKeys'
 
 export type { RecordCommandResult }
 
+/**
+ * サーバー関数の入力が FormData であることを確かめ，記録の登録・更新内容に変換する
+ * @param data サーバー関数の入力
+ * @returns 登録・更新内容．入力が不正な場合はエラーメッセージ
+ */
 function validateFormData(data: unknown): RecordPayloadParseResult {
   if (!(data instanceof FormData)) return { ok: false, error: '入力内容が不正です' }
   return parseRecordFormData(data)
