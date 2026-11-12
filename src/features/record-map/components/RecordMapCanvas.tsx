@@ -120,12 +120,14 @@ export function RecordMapCanvas({
   }
 
   return (
-    <div className={css({ position: 'absolute', inset: '0' })}>
+    // ピンの z-index が地図の外の検索欄などより手前に出ないよう，重なり順をこの中に閉じ込める
+    <div className={css({ position: 'absolute', inset: '0', isolation: 'isolate' })}>
       <Map
         id={RECORD_MAP_ID}
         initialViewState={savedView ?? INITIAL_VIEW_STATE}
         mapStyle={mapStyle}
-        style={{ width: '100%', height: '100%' }}
+        // ピンの z-index が現在地・方位のボタンより手前に出ないよう，地図の中に閉じ込める
+        style={{ width: '100%', height: '100%', isolation: 'isolate' }}
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         // 日付変更線をまたいで表示すると表示範囲の経度が ±180 を超え，記録を検索できないため
