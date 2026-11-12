@@ -2,14 +2,21 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "field-note",
   "compatibility_date": "2025-09-02",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "main": "@tanstack/react-start/server-entry",
+  "routes": [
+    {
+      "pattern": "field-note.satooru.dev",
+      "custom_domain": true
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "field-note",
-      // wrangler d1 create field-note で作成したデータベースの ID に置き換える
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "9498a3ba-2f45-4dc6-8a3f-61dfda798de8",
       "migrations_dir": "drizzle"
     }
   ],
