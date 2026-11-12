@@ -30,6 +30,12 @@ const STYLE: StyleSpecification = {
       minzoom: 13,
       paint: { 'line-color': '#dddddd', 'line-width': 1 },
     },
+    {
+      id: 'boundary_state',
+      type: 'line',
+      source: 'protomaps',
+      paint: { 'line-color': '#ead5d7', 'line-width': 1, 'line-dasharray': [2, 2] },
+    },
     { id: 'roadname_minor', type: 'symbol', source: 'protomaps', layout: { 'text-field': '' } },
     { id: 'housenumber', type: 'symbol', source: 'protomaps', layout: { 'text-field': '' } },
   ],
@@ -142,6 +148,18 @@ describe('customizeMapStyle の地下鉄', () => {
     // Assert
     expect(subway).toMatchObject({ minzoom: 12, paint: { 'line-color': '#8a8f98' } })
     expect(subway?.type === 'line' && subway.paint?.['line-dasharray']).toBeFalsy()
+  })
+})
+
+describe('customizeMapStyle の県境', () => {
+  it('県境を濃い色の太い実線にする', () => {
+    // Act
+    const style = customizeMapStyle(STYLE)
+    const boundary = findLayer({ style, id: 'boundary_state' })
+
+    // Assert
+    expect(boundary).toMatchObject({ paint: { 'line-color': '#8a6f80' } })
+    expect(boundary?.type === 'line' && boundary.paint?.['line-dasharray']).toBeFalsy()
   })
 })
 

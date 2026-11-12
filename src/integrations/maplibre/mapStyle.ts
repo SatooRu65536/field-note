@@ -41,6 +41,10 @@ const RAIL_LINE_COLOR = '#8a8f98'
 // 路線と駅を表示し始めるズームレベル
 const TRANSIT_MIN_ZOOM = 12
 
+// 元のスタイルでは薄い色の細い破線で描く県境を，県の範囲が分かるよう濃い実線で描く
+const PREFECTURE_BOUNDARY_LAYER_ID = 'boundary_state'
+const PREFECTURE_BOUNDARY_COLOR = '#8a6f80'
+
 const SOURCE_ID = 'protomaps'
 const STATION_COLOR = '#4a5160'
 // 元のスタイルの地名のラベルと同じフォント．CJK のフォントを含む
@@ -119,6 +123,18 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
       paint: { ...layer.paint, 'line-color': RAIL_LINE_COLOR },
     }
   }
+  if (layer.type === 'line' && layer.id === PREFECTURE_BOUNDARY_LAYER_ID) {
+    // 破線の指定を除いて実線にする
+    const { 'line-dasharray': _, ...paint } = layer.paint ?? {}
+    return {
+      ...layer,
+      paint: {
+        ...paint,
+        'line-color': PREFECTURE_BOUNDARY_COLOR,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 1, 8, 1.8, 12, 2.5],
+      },
+    }
+  }
   if (layer.type === 'line' && layer.id === 'waterway') {
     return { ...layer, paint: { ...layer.paint, 'line-color': WATERWAY_LINE_COLOR } }
   }
@@ -129,7 +145,7 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
 }
 
 /**
- * CARTO のスタイルを，地名を絞り込み，緑地・河川・線路の色を濃くし，駅を加えたスタイルに変換する
+ * CARTO のスタイルを，地名を絞り込み，緑地・河川・線路・県境を濃くし，駅を加えたスタイルに変換する
  * @param style CARTO のスタイル
  * @returns 変換したスタイル
  */
