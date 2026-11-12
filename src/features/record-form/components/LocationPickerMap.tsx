@@ -1,11 +1,12 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { Map, Marker, useMap } from 'react-map-gl/maplibre'
 import type { MapLayerMouseEvent, MarkerDragEvent } from 'react-map-gl/maplibre'
 
 import { MapPin } from '@/components/ui/MapPin'
+import { currentPositionQueryOptions } from '@/integrations/geolocation/currentPositionQueryOptions'
 import type { Coordinates } from '@/integrations/geolocation/getCurrentCoordinates'
 import {
   DEFAULT_PIN_COLOR,
@@ -27,6 +28,18 @@ interface LocationPickerMapProps {
 export function LocationPickerMap({ location, onLocationChanged }: LocationPickerMapProps) {
   const { [LOCATION_PICKER_MAP_ID]: map } = useMap()
   const { data: mapStyle } = useSuspenseQuery(mapStyleQueryOptions())
+  const { data: currentPosition } = useQuery(currentPositionQueryOptions())
+  const hasMovedToCurrentPosition = useRef(false)
+
+  // 発見場所が未指定の場合，現在地は非同期に取得されるため，取得できた時点で一度だけ地図を現在地へ移動する
+  useEffect(() => {
+    if (!map || location || !currentPosition || hasMovedToCurrentPosition.current) return
+    hasMovedToCurrentPosition.current = true
+    map.jumpTo({
+      center: [currentPosition.longitude, currentPosition.latitude],
+      zoom: FOCUS_ZOOM,
+    })
+  }, [map, location, currentPosition])
 
   // 現在地の取得などで地図の外から位置が変わった場合に，その位置が見えるよう地図を動かす
   useEffect(() => {
