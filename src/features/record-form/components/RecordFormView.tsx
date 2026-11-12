@@ -185,15 +185,6 @@ export function RecordFormView({
         />
       </FieldGroup>
 
-      <label className={css({ display: 'flex', alignItems: 'center', gap: '2' })}>
-        <input
-          type="checkbox"
-          checked={values.isPublic}
-          onChange={(event) => updateValues({ isPublic: event.target.checked })}
-        />
-        一般公開する
-      </label>
-
       {error && (
         <p
           role="alert"

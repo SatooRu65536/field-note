@@ -12,7 +12,6 @@ const VALUES: RecordFormValues = {
   memo: ' 公園で拾った \n',
   tags: ['どんぐり'],
   nameMemo: 'ブナ科の落葉高木',
-  isPublic: true,
   existingPhotoIds: ['photo-1', 'photo-2'],
   removedPhotoIds: ['photo-2'],
   newPhotos: [],

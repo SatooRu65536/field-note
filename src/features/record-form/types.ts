@@ -18,7 +18,6 @@ export interface RecordFormValues {
   readonly tags: readonly string[]
   // 名前ごとのメモ．編集していない場合は null とし，保存済みのメモを変更しない
   readonly nameMemo: string | null
-  readonly isPublic: boolean
   readonly existingPhotoIds: readonly string[]
   readonly removedPhotoIds: readonly string[]
   readonly newPhotos: readonly NewPhoto[]

@@ -10,7 +10,6 @@ import { formatRecordName } from '@/integrations/field-note-api/recordName'
 import type { RecordSummary } from '@/integrations/field-note-api/records'
 import { formatDateTime } from '@/integrations/intl/formatDateTime'
 
-import { VisibilityLabel } from './VisibilityLabel'
 
 interface AdminRecordRowProps {
   readonly record: RecordSummary
@@ -65,7 +64,6 @@ export function AdminRecordRow({
           <span className={css({ fontWeight: 'bold', truncate: true })}>
             {formatRecordName(record.name)}
           </span>
-          <VisibilityLabel isPublic={record.isPublic} />
         </div>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '2', flexWrap: 'wrap' })}>
           {category && <DotLabel name={category.name} color={category.color} />}
@@ -75,15 +73,13 @@ export function AdminRecordRow({
         </div>
       </div>
       <div className={css({ display: 'flex', gap: '2', flexShrink: 0 })}>
-        {record.isPublic && (
-          <Link
-            to="/records/$recordId"
-            params={{ recordId: record.id }}
-            className={buttonRecipe({ variant: 'secondary', size: 'sm' })}
-          >
-            表示
-          </Link>
-        )}
+        <Link
+          to="/records/$recordId"
+          params={{ recordId: record.id }}
+          className={buttonRecipe({ variant: 'secondary', size: 'sm' })}
+        >
+          表示
+        </Link>
         <Link
           to="/admin/records/$recordId/edit"
           params={{ recordId: record.id }}
