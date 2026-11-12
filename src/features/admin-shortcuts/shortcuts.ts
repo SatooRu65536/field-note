@@ -19,6 +19,7 @@ export const SHORTCUT_DEFINITIONS: readonly ShortcutDefinition[] = [
   { key: 'm', description: '地図' },
   { key: 'e', description: '表示中の記録を編集（記録の詳細画面）' },
   { key: '/', description: '検索欄にフォーカス（地図画面）' },
+  { key: '⌘S / Ctrl+S', description: '保存（記録の追加・編集画面）' },
   { key: '?', description: 'ショートカットの一覧' },
 ]
 

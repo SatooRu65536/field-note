@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { css } from 'styled-system/css'
 
@@ -23,6 +23,7 @@ import {
   inferTags,
 } from '../candidates'
 import { getLastName, replaceLastName, splitRecordNames } from '../recordNames'
+import { useSaveShortcut } from '../hooks/useSaveShortcut'
 import type { RecordFormValues } from '../types'
 import { LocationField } from './LocationField'
 import { NameMemoField } from './NameMemoField'
@@ -56,6 +57,8 @@ export function RecordFormView({
   onSubmitted,
 }: RecordFormViewProps) {
   const [values, setValues] = useState(initialValues)
+  const formRef = useRef<HTMLFormElement>(null)
+  useSaveShortcut({ formRef, isEnabled: !isSaving })
   const names = canRegisterMultiple ? splitRecordNames(values.name) : [values.name.trim()]
   const isMultiple = !values.isNameUnknown && names.length > 1
   // 候補の絞り込みには，まとめて登録する場合も入力中の最後の名前を使う
@@ -112,6 +115,7 @@ export function RecordFormView({
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
       noValidate
       className={css({ display: 'flex', flexDirection: 'column', gap: '6' })}
