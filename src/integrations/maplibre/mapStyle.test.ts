@@ -170,7 +170,7 @@ describe('customizeMapStyle の県境', () => {
     expect(municipality).toMatchObject({
       filter: ['==', ['get', 'kind_detail'], 7],
       minzoom: 10,
-      paint: { 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.6, 12, 1, 16, 1.5] },
+      paint: { 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 12, 1.8, 16, 2.5] },
     })
   })
 

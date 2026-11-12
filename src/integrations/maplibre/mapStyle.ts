@@ -58,7 +58,7 @@ const MUNICIPALITY_BOUNDARY_LAYER: LayerSpecification = {
   paint: {
     'line-color': PREFECTURE_BOUNDARY_COLOR,
     'line-opacity': 0.6,
-    'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.6, 12, 1, 16, 1.5],
+    'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 12, 1.8, 16, 2.5],
   },
   layout: { 'line-join': 'round' },
 }
@@ -157,7 +157,7 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
       paint: {
         ...paint,
         'line-color': PREFECTURE_BOUNDARY_COLOR,
-        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 1, 8, 1.8, 12, 2.5],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 1.5, 8, 2.5, 12, 3.2, 16, 4],
       },
     }
   }
