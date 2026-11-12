@@ -10,13 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as PhotosPhotoIdRouteImport } from './routes/photos/$photoId'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
+import { Route as AdminRecordsIndexRouteImport } from './routes/admin/records/index'
+import { Route as AdminRecordsNewRouteImport } from './routes/admin/records/new'
+import { Route as AdminRecordsRecordIdEditRouteImport } from './routes/admin/records/$recordId/edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const PhotosPhotoIdRoute = PhotosPhotoIdRouteImport.update({
   id: '/photos/$photoId',
@@ -28,33 +43,88 @@ const RecordsRecordIdRoute = RecordsRecordIdRouteImport.update({
   path: '/records/$recordId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRecordsIndexRoute = AdminRecordsIndexRouteImport.update({
+  id: '/records/',
+  path: '/records/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminRecordsNewRoute = AdminRecordsNewRouteImport.update({
+  id: '/records/new',
+  path: '/records/new',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminRecordsRecordIdEditRoute =
+  AdminRecordsRecordIdEditRouteImport.update({
+    id: '/records/$recordId/edit',
+    path: '/records/$recordId/edit',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/photos/$photoId': typeof PhotosPhotoIdRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/records/new': typeof AdminRecordsNewRoute
+  '/admin/records/': typeof AdminRecordsIndexRoute
+  '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/photos/$photoId': typeof PhotosPhotoIdRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/records/new': typeof AdminRecordsNewRoute
+  '/admin/records': typeof AdminRecordsIndexRoute
+  '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/photos/$photoId': typeof PhotosPhotoIdRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/records/new': typeof AdminRecordsNewRoute
+  '/admin/records/': typeof AdminRecordsIndexRoute
+  '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/photos/$photoId' | '/records/$recordId'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/photos/$photoId'
+    | '/records/$recordId'
+    | '/admin/'
+    | '/admin/records/new'
+    | '/admin/records/'
+    | '/admin/records/$recordId/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/photos/$photoId' | '/records/$recordId'
-  id: '__root__' | '/' | '/photos/$photoId' | '/records/$recordId'
+  to:
+    | '/'
+    | '/photos/$photoId'
+    | '/records/$recordId'
+    | '/admin'
+    | '/admin/records/new'
+    | '/admin/records'
+    | '/admin/records/$recordId/edit'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/photos/$photoId'
+    | '/records/$recordId'
+    | '/admin/'
+    | '/admin/records/new'
+    | '/admin/records/'
+    | '/admin/records/$recordId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   PhotosPhotoIdRoute: typeof PhotosPhotoIdRoute
   RecordsRecordIdRoute: typeof RecordsRecordIdRoute
 }
@@ -67,6 +137,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/photos/$photoId': {
       id: '/photos/$photoId'
@@ -82,11 +166,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecordsRecordIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/records/': {
+      id: '/admin/records/'
+      path: '/records'
+      fullPath: '/admin/records/'
+      preLoaderRoute: typeof AdminRecordsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/records/new': {
+      id: '/admin/records/new'
+      path: '/records/new'
+      fullPath: '/admin/records/new'
+      preLoaderRoute: typeof AdminRecordsNewRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/records/$recordId/edit': {
+      id: '/admin/records/$recordId/edit'
+      path: '/records/$recordId/edit'
+      fullPath: '/admin/records/$recordId/edit'
+      preLoaderRoute: typeof AdminRecordsRecordIdEditRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
   }
 }
 
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminRecordsNewRoute: typeof AdminRecordsNewRoute
+  AdminRecordsIndexRoute: typeof AdminRecordsIndexRoute
+  AdminRecordsRecordIdEditRoute: typeof AdminRecordsRecordIdEditRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminRecordsNewRoute: AdminRecordsNewRoute,
+  AdminRecordsIndexRoute: AdminRecordsIndexRoute,
+  AdminRecordsRecordIdEditRoute: AdminRecordsRecordIdEditRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   PhotosPhotoIdRoute: PhotosPhotoIdRoute,
   RecordsRecordIdRoute: RecordsRecordIdRoute,
 }
