@@ -7,6 +7,8 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OGP_IMAGE_PATH } from '@/constants/site'
+import { PageLayout } from '@/components/layouts/PageLayout'
+import { NotFoundMessage } from '@/components/ui/NotFoundMessage'
 import { AdminShortcuts } from '@/features/admin-shortcuts'
 import { createOgpMeta } from '@/integrations/ogp/createOgpMeta'
 
@@ -52,7 +54,19 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: NotFoundPage,
 })
+
+function NotFoundPage() {
+  return (
+    <PageLayout>
+      <NotFoundMessage
+        title="ページが見つかりません"
+        description="URL が間違っているか，ページが移動・削除された可能性があります．"
+      />
+    </PageLayout>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
