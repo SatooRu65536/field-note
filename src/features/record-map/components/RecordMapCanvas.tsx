@@ -32,6 +32,7 @@ import { CurrentPositionMarker } from './CurrentPositionMarker'
 import { MapControls } from './MapControls'
 import { RecordPin } from './RecordPin'
 import { SpiderLegs } from './SpiderLegs'
+import { SpreadRecordMarker } from './SpreadRecordMarker'
 
 // 地図の読み込み前に，記録をまとめるときの範囲
 const WORLD_BOUNDS = { west: -180, east: 180, south: -90, north: 90 }
@@ -169,12 +170,14 @@ export function RecordMapCanvas({
                     offsets={offsets}
                   />
                   {item.records.map((record, index) => (
-                    <RecordPin
+                    <SpreadRecordMarker
                       key={record.id}
+                      latitude={item.latitude}
+                      longitude={item.longitude}
                       record={record}
                       color={colorByCategoryId.get(record.categoryId) ?? DEFAULT_PIN_COLOR}
                       isSelected={record.id === selectedRecordId}
-                      offset={offsets[index]}
+                      offset={offsets[index] ?? { x: 0, y: 0 }}
                       onRecordSelected={onRecordSelected}
                     />
                   ))}

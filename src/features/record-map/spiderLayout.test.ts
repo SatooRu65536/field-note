@@ -32,7 +32,7 @@ describe('calculateSpiderOffsets', () => {
     expect(offsets[0]?.y).toBeLessThan(0)
   })
 
-  it.each([2, 8, 9, 30])('%i件を並べても，どのピンも隣とピンの幅以上離れる', (count) => {
+  it.each([2, 8, 9, 30])('%i件を並べても，どの丸も隣と丸の直径以上離れる', (count) => {
     // Act
     const offsets = calculateSpiderOffsets(count)
 
@@ -40,6 +40,6 @@ describe('calculateSpiderOffsets', () => {
     const minDistance = Math.min(
       ...offsets.flatMap((a, i) => offsets.slice(i + 1).map((b) => distanceBetween(a, b))),
     )
-    expect(minDistance).toBeGreaterThanOrEqual(32)
+    expect(minDistance).toBeGreaterThanOrEqual(36)
   })
 })

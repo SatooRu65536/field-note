@@ -9,7 +9,7 @@ interface SpiderLegsProps {
   readonly offsets: readonly PixelOffset[]
 }
 
-// 広げたピンより奥に描くための重なり順．広げたピン（500000）より小さく，周りのピンより大きくする
+// 広げた丸より奥に描くための重なり順．広げた丸（500000）より小さく，周りのピンより大きくする
 const SPIDER_LEGS_Z_INDEX = 400000
 
 export function SpiderLegs({ latitude, longitude, offsets }: SpiderLegsProps) {

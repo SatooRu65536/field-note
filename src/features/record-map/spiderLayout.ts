@@ -5,7 +5,7 @@ export interface PixelOffset {
 
 // 円状に並べる上限．これより多い場合は渦巻き状に並べる
 const MAX_CIRCLE_ITEMS = 8
-// ピンの幅（32px）に余白を加えた，隣り合うピンの間隔
+// 丸の直径（36px）に余白を加えた，隣り合う丸の間隔
 const PIN_SPACING_PIXELS = 40
 const MIN_CIRCLE_RADIUS_PIXELS = 36
 
@@ -16,7 +16,7 @@ const MIN_CIRCLE_RADIUS_PIXELS = 36
  */
 export function calculateSpiderOffsets(count: number): readonly PixelOffset[] {
   if (count <= MAX_CIRCLE_ITEMS) {
-    // ピン同士が重ならない円周の長さになるよう半径を決める
+    // 丸同士が重ならない円周の長さになるよう半径を決める
     const radius = Math.max(MIN_CIRCLE_RADIUS_PIXELS, (PIN_SPACING_PIXELS * count) / (2 * Math.PI))
     return Array.from({ length: count }, (_, index) => {
       // 真上から時計回りに並べる
@@ -25,7 +25,7 @@ export function calculateSpiderOffsets(count: number): readonly PixelOffset[] {
     })
   }
 
-  // アルキメデスの渦巻きの上に，隣り合うピンが等間隔になるよう並べる
+  // アルキメデスの渦巻きの上に，隣り合う丸が等間隔になるよう並べる
   return Array.from({ length: count }, (_, index) => {
     const angle = Math.sqrt(index + 1) * 2.4
     const radius = MIN_CIRCLE_RADIUS_PIXELS + (PIN_SPACING_PIXELS / (2 * Math.PI)) * angle * 1.6
