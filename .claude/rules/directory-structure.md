@@ -10,7 +10,9 @@ field-note のソースコードの配置先を定めるルール．
 ## 全体
 
 本アプリは，ルート直下の `src/` に TanStack Start の単一アプリとして構成すること．
-API は Hono で実装し，TanStack Start のサーバールートにマウントすること．
+画面は SSR し，データの取得・更新は TanStack Start のサーバー関数（`createServerFn`）で行うこと．
+HTTP の API は設けないこと．
+ただし，サーバー関数で返せないレスポンス（例：画像）は，サーバールートで返してよい（[routes](#routes) を参照）．
 
 `src/` 配下は次の構成とすること．
 
@@ -22,10 +24,10 @@ src/
 │   ├── ui/                    # ドメイン知識を持たない UI プリミティブ
 │   └── layouts/               # アプリ全体のレイアウト（ヘッダー・サイドバー等）
 ├── integrations/
-│   ├── field-note-api/        # 画面から API へのリクエスト
-│   └── <library>/             # ライブラリの設定（例：tanstack-query/，maplibre/）
-├── server/                    # Hono による API の実装
-├── constants/                 # 画面・API の双方で使う定数
+│   ├── field-note-api/        # サーバー関数と，そのクエリの設定
+│   └── <library>/             # ライブラリ・ブラウザ API の設定（例：tanstack-query/，maplibre/，geolocation/）
+├── server/                    # サーバーでのみ動く処理（DB・R2 へのアクセス等）
+├── constants/                 # 画面・サーバーの双方で使う定数
 ├── middlewares/               # start.ts に登録する，特定の feature に属さないリクエストミドルウェア
 ├── routeTree.gen.ts           # pnpm run generate-routes で生成するルート定義
 ├── *.d.ts                     # 型宣言（例：cloudflare-workers.d.ts）
@@ -37,7 +39,7 @@ src/
 リクエストの流れは次の通り．
 
 ```text
-画面（routes → features） → integrations/field-note-api → routes/api/$.ts → server/（Hono） → D1・R2
+画面（routes → features） → integrations/field-note-api（サーバー関数） → server/ → D1・R2
 ```
 
 ## 画面
@@ -53,7 +55,8 @@ src/
   - `routeTree.gen.ts` は生成ファイルのため，手で編集しないこと
 - ルートファイルは loader と，レイアウト・feature・共通コンポーネントの組み合わせのみを記述し，画面固有の実装は feature に配置すること
   - ルートファイルに見た目の CSS を書かないこと（[見た目の CSS](#見た目の-css) を参照）
-- 画面を持たないルート（例：Hono をマウントする `routes/api/$.ts`）は，コンポーネントを持たない `.ts` ファイルとすること
+- 画面を持たないサーバールート（例：写真を配信する `routes/photos/$photoId.ts`）は，コンポーネントを持たない `.ts` ファイルとすること
+  - サーバールートは，サーバー関数で返せないレスポンス（例：画像）に限って使うこと
 
 #### 管理画面
 
@@ -101,88 +104,59 @@ features/<feature-name>/
 
 ### integrations
 
-- 画面から API へのリクエストは `src/integrations/field-note-api/` に，リソースごとのファイル（例：`records.ts`・`categories.ts`）として配置すること
-  - リクエストの共通処理は `apiClient.ts` に配置し，各ファイルから使うこと
-- ライブラリの設定・Provider は `src/integrations/<library>/` に配置すること
+- サーバー関数と，それを呼ぶクエリの設定（`queryOptions`）は `src/integrations/field-note-api/` に，リソースごとのファイル（例：`records.ts`・`categories.ts`）として配置すること
+  - サーバー関数の書き方は [サーバー関数](#サーバー関数) を参照すること
+- 次のものも `src/integrations/field-note-api/` に配置すること
+  - サーバー関数の共通のミドルウェア（例：`adminMiddleware.ts`）
+  - サーバー関数の入出力の変換・検証（例：`recordFormData.ts`，`tags.ts`）
+  - クエリキー（`queryKeys.ts`）
+  - サーバー関数が返す値・URL を画面で扱うための純粋関数（例：`recordName.ts`，`photos.ts`）
+- ライブラリ・ブラウザ API（例：Geolocation API，Intl）の設定・Provider・薄いラッパーは `src/integrations/<library>/` に配置すること
 
 ### middlewares
 
 - `src/start.ts` の `requestMiddleware` に登録する，特定の feature に属さないミドルウェアは `src/middlewares/` に配置すること
 - ミドルウェアから切り出した純粋関数は，同じディレクトリに配置してテストを追加すること
 
-## API
+## サーバー
 
 `src/server/` 配下は次の構成とすること．
 
 ```text
 src/server/
-├── app.ts                     # Hono アプリ（各 feature のルートをマウント）
-├── features/
-│   ├── <resource>/            # 一般ユーザー向けのエンドポイント（/api/<resource>）
-│   └── admin/<resource>/      # 管理者向けのエンドポイント（/api/admin/<resource>）
-├── common/<domain>/           # 複数の feature で使うドメインの処理
+├── <domain>/                  # ドメインごとの DB アクセス・ドメインの処理（例：records/，categories/，photos/）
 └── lib/                       # ドメイン知識を持たない基盤（DB・R2・Cloudflare Access 等）
 ```
 
-- `src/server/` は，`src/routes/api/$.ts` からのみ import すること
-  - API の実装を画面側のバンドルに含めないため
+- `src/server/` は，次の箇所からのみ import すること
+  - `src/integrations/field-note-api/` のサーバー関数のハンドラ・ミドルウェアの `.server()`
+  - サーバールートのハンドラ
+  - これらは TanStack Start のコンパイラが画面側のバンドルから取り除くため
 
-### features
+### サーバー関数
 
-- 特定のリソースに閉じたルート・validator・ハンドラ・ドメインの処理は `src/server/features/<resource>/` に配置すること
-- `<resource>` はルートをマウントするパス（例：`/api/records` → `records/`）と揃えること
-- 管理者のみが実行できるエンドポイント（投稿・編集・削除・非公開記録の閲覧）は `src/server/features/admin/<resource>/` に配置し，`/api/admin/<resource>` にマウントすること
-  - Cloudflare Access で `/api/admin` 以下のパスをまとめて保護するため
-- feature ディレクトリ配下は次の構成とし，`validators.ts`・`domain/` は該当するものがある場合のみ配置すること
+サーバー関数は `src/integrations/field-note-api/` に配置する（[integrations](#integrations) を参照）．
 
-```text
-features/<resource>/
-├── routes.ts      # ルート
-├── validators.ts  # validator
-├── usecases/      # ハンドラ（1エンドポイント1ファイル）
-└── domain/        # その feature だけで使う DB アクセス・純粋関数・ミドルウェア
-```
+- サーバー関数は `createServerFn` で定義し，入力を `.validator()` で実行時に検証すること
+  - 検証に失敗しうる入力（例：フォームの入力）は，Result 型（`{ ok: true, value } | { ok: false, error }`）に変換してハンドラに渡し，エラーメッセージを画面に返すこと
+- サーバー関数のハンドラは，`src/server/` の処理を呼び出す組み合わせのみを記述し，DB アクセスやドメインロジックを直接書かないこと
+- 管理者のみが実行できるサーバー関数（投稿・編集・削除・非公開記録の閲覧）には，`adminMiddleware` を付与すること
+  - サーバー関数は `/admin` 以外のパスで動き，Cloudflare Access の保護の対象外となるため，Cloudflare Access の JWT をサーバー側で検証する
 
-- feature から他の feature を import しないこと
-  - 複数の feature で使うもの（例：`records/` と `admin/records/` の双方で使う記録の取得処理）は `common/` または `lib/` に配置すること
+### ドメイン
 
-#### routes.ts
-
-- ルートはパス・ミドルウェア・ハンドラの組み合わせのみを記述し，具体的な実装を持たないこと
-- ハンドラは `createHandlers` が返す配列のため，スプレッド構文で展開して渡すこと
-
-```ts
-.get('/', ...listRecords)
-```
-
-#### usecases
-
-- 各エンドポイントのハンドラは `usecases/<handlerName>.ts` に，1エンドポイント1ファイルで配置すること
-- ハンドラは hono の `createFactory<Env, Path>().createHandlers(validator, handler)` で定義すること
-  - validator とハンドラを1組にまとめ，`c.req.valid()` の型を validator から推論させるため
-  - validator がないハンドラも，ルートでの渡し方を揃えるため `createHandlers` で定義すること
-- ルートに書いたミドルウェアは validator より前に実行されるため，検証の後に実行するミドルウェアは `createHandlers` の validator の後に含めること
-- DB アクセスやドメインロジックはハンドラに直接書かず，`domain/` または `common/` に配置すること
-
-#### validators.ts
-
-- リクエストの検証は `@hono/standard-validator` の `sValidator` で行うこと
-- validator は検証に失敗した場合のエラーレスポンスまで含めて定義すること
-
-### common
-
-- 複数の feature で使う DB アクセス・純粋関数・ミドルウェアは `src/server/common/<domain>/`（例：`records/`）に配置すること
-- 1つの feature だけで使うものは，対象のドメインに関わらずその feature の `domain/` に配置すること
-- `common/` から `features/` を import しないこと
+- 記録の取得・登録などの DB アクセス・純粋関数は `src/server/<domain>/`（例：`records/`）に配置すること
+- `<domain>/` から他の `<domain>/` を import してよいが，循環させないこと
 
 ### lib
 
-- DB クライアント・R2 クライアント・Cloudflare Access の検証・エラーハンドラ・検証の補助関数など，ドメイン知識を持たない基盤は `src/server/lib/` に配置すること
+- DB クライアント・R2 クライアント・Cloudflare Access の検証など，ドメイン知識を持たない基盤は `src/server/lib/` に配置すること
 - DB のスキーマ定義はテーブル構成を持つが，DB クライアントやマイグレーションと一体で扱うため `src/server/lib/db/` に配置すること
-- `lib/` から `features/`・`common/` を import しないこと
+- `lib/` から `<domain>/` を import しないこと
 
 ## 定数
 
+- 画面・サーバーの双方で使う定数（例：写真の上限枚数）は `src/constants/` に配置すること
 - DB の列の値集合（enum 設定・CHECK 制約に使う定数）は，画面で使わないものも含めて `src/constants/` に配置すること
 - `src/constants/` からは，`src/` 配下の他のディレクトリを import しないこと
-  - 画面・API の双方から参照するため
+  - 画面・サーバーの双方から参照するため
