@@ -169,6 +169,7 @@ describe('customizeMapStyle の県境', () => {
     expect(style.layers.at(-2)?.id).toBe('field_note_municipality_boundary')
     expect(municipality).toMatchObject({
       filter: ['==', ['get', 'kind_detail'], 7],
+      minzoom: 10,
       paint: { 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.6, 12, 1, 16, 1.5] },
     })
   })
@@ -181,6 +182,39 @@ describe('customizeMapStyle の県境', () => {
     // Assert
     expect(boundary).toMatchObject({ paint: { 'line-color': '#8a6f80' } })
     expect(boundary?.type === 'line' && boundary.paint?.['line-dasharray']).toBeFalsy()
+  })
+})
+
+describe('customizeMapStyle の境界のタイル', () => {
+  const STYLE_WITH_SOURCE: StyleSpecification = {
+    ...STYLE,
+    sources: {
+      protomaps: { type: 'vector', tiles: ['https://example.test/{z}/{x}/{y}.mvt'], maxzoom: 15 },
+    },
+  }
+
+  it('境界はズーム 13 までのタイルを拡大して描く', () => {
+    // Act
+    const style = customizeMapStyle(STYLE_WITH_SOURCE)
+
+    // Assert
+    expect(style.sources.field_note_boundaries).toEqual({
+      type: 'vector',
+      tiles: ['https://example.test/{z}/{x}/{y}.mvt'],
+      maxzoom: 13,
+    })
+    expect(findLayer({ style, id: 'boundary_state' })).toMatchObject({ source: 'field_note_boundaries' })
+    expect(findLayer({ style, id: 'field_note_municipality_boundary' })).toMatchObject({
+      source: 'field_note_boundaries',
+    })
+  })
+
+  it('境界以外のレイヤーは元のタイルのまま描く', () => {
+    // Act
+    const style = customizeMapStyle(STYLE_WITH_SOURCE)
+
+    // Assert
+    expect(findLayer({ style, id: 'water' })).toMatchObject({ source: 'protomaps' })
   })
 })
 

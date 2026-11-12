@@ -51,7 +51,8 @@ const MUNICIPALITY_BOUNDARY_LAYER: LayerSpecification = {
   type: 'line',
   source: 'protomaps',
   'source-layer': 'boundaries',
-  minzoom: 8,
+  // タイルに市町村境のデータが含まれるのはズーム 10 から
+  minzoom: 10,
   // 日本の行政区域では kind_detail（admin_level）の 7 が市町村にあたる
   filter: ['==', ['get', 'kind_detail'], 7],
   paint: {
@@ -63,6 +64,14 @@ const MUNICIPALITY_BOUNDARY_LAYER: LayerSpecification = {
 }
 
 const SOURCE_ID = 'protomaps'
+
+// タイルはズーム 14 以上で境界のデータを含まないため，境界はズーム 13 のタイルを拡大して描く
+const BOUNDARY_SOURCE_ID = 'field_note_boundaries'
+const BOUNDARY_SOURCE_MAX_ZOOM = 13
+const BOUNDARY_LAYER_IDS: readonly string[] = [
+  PREFECTURE_BOUNDARY_LAYER_ID,
+  MUNICIPALITY_BOUNDARY_LAYER.id,
+]
 const STATION_COLOR = '#4a5160'
 // 元のスタイルの地名のラベルと同じフォント．CJK のフォントを含む
 const LABEL_FONT = ['Montserrat SemiBold', 'Open Sans Bold', 'Noto Sans Regular', 'Noto Sans CJK JP Regular']
@@ -167,18 +176,27 @@ function customizeLayer(layer: LayerSpecification): LayerSpecification {
  * @returns 変換したスタイル
  */
 export function customizeMapStyle(style: StyleSpecification): StyleSpecification {
-  const layers = style.layers
+  const customizedLayers = style.layers
     .filter((layer) => !HIDDEN_LAYER_IDS.includes(layer.id))
     .map(customizeLayer)
+  // 駅は他のラベルと同じく元のレイヤーより手前に，県境は他のどのレイヤーにも隠れないよう最前面に描き，市町村境はその下に描く
+  const layers = [
+    ...customizedLayers.filter((layer) => layer.id !== PREFECTURE_BOUNDARY_LAYER_ID),
+    ...TRANSIT_LAYERS,
+    MUNICIPALITY_BOUNDARY_LAYER,
+    ...customizedLayers.filter((layer) => layer.id === PREFECTURE_BOUNDARY_LAYER_ID),
+  ]
+
+  const source = style.sources[SOURCE_ID]
+  if (source?.type !== 'vector') return { ...style, layers }
   return {
     ...style,
-    // 駅は他のラベルと同じく元のレイヤーより手前に，県境は他のどのレイヤーにも隠れないよう最前面に描き，市町村境はその下に描く
-    layers: [
-      ...layers.filter((layer) => layer.id !== PREFECTURE_BOUNDARY_LAYER_ID),
-      ...TRANSIT_LAYERS,
-      MUNICIPALITY_BOUNDARY_LAYER,
-      ...layers.filter((layer) => layer.id === PREFECTURE_BOUNDARY_LAYER_ID),
-    ],
+    sources: { ...style.sources, [BOUNDARY_SOURCE_ID]: { ...source, maxzoom: BOUNDARY_SOURCE_MAX_ZOOM } },
+    layers: layers.map((layer) =>
+      BOUNDARY_LAYER_IDS.includes(layer.id) && 'source' in layer
+        ? { ...layer, source: BOUNDARY_SOURCE_ID }
+        : layer,
+    ),
   }
 }
 
