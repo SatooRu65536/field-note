@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, DragEvent } from 'react'
 import { css, cx } from 'styled-system/css'
 
 import {
@@ -9,7 +9,10 @@ import {
 } from '@/constants/photos'
 import { createPhotoUrl } from '@/integrations/field-note-api/photos'
 
+import { selectPhotoFiles } from '../photoFiles'
+import type { PhotoFileSelection } from '../photoFiles'
 import type { NewPhoto } from '../types'
+import { PhotoSelectionNotice } from './PhotoSelectionNotice'
 import { PhotoThumbnail } from './PhotoThumbnail'
 
 interface PhotoFieldProps {
@@ -23,6 +26,8 @@ interface PhotoFieldProps {
 
 const FILE_INPUT_LABEL_STYLES = css({
   display: 'flex',
+  flexDirection: 'column',
+  gap: '1',
   alignItems: 'center',
   justifyContent: 'center',
   w: '28',
@@ -38,6 +43,21 @@ const FILE_INPUT_LABEL_STYLES = css({
   _focusWithin: { outline: '2px solid', outlineColor: 'accent', outlineOffset: '2px' },
 })
 
+const DROP_ZONE_STYLES = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '2',
+  p: '2',
+  m: '-2',
+  borderRadius: 'lg',
+  borderWidth: '2px',
+  borderStyle: 'dashed',
+  borderColor: 'transparent',
+  transition: 'background-color 0.15s, border-color 0.15s',
+})
+
+const DRAGGING_DROP_ZONE_STYLES = css({ borderColor: 'accent', bg: 'accent-muted' })
+
 const DISABLED_FILE_INPUT_LABEL_STYLES = css({ opacity: 0.4, cursor: 'not-allowed' })
 
 export function PhotoField({
@@ -50,17 +70,15 @@ export function PhotoField({
 }: PhotoFieldProps) {
   const keptPhotoCount = existingPhotoIds.length - removedPhotoIds.length
   const remainingCount = MAX_PHOTO_COUNT - keptPhotoCount - newPhotos.length
-  const [skippedCount, setSkippedCount] = useState(0)
+  const [selection, setSelection] = useState<PhotoFileSelection | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
-  function handleFilesChange(event: ChangeEvent<HTMLInputElement>): void {
-    const selectedFiles = Array.from(event.target.files ?? [])
-    const files = selectedFiles.slice(0, Math.max(remainingCount, 0))
-    setSkippedCount(selectedFiles.length - files.length)
-    // 同じファイルを続けて選べるよう選択状態を消す
-    event.target.value = ''
+  function addFiles(files: readonly File[]): void {
+    const nextSelection = selectPhotoFiles({ files, remainingCount })
+    setSelection(nextSelection)
     onNewPhotosChanged([
       ...newPhotos,
-      ...files.map((file) => ({
+      ...nextSelection.files.map((file) => ({
         id: crypto.randomUUID(),
         file,
         previewUrl: URL.createObjectURL(file),
@@ -68,9 +86,37 @@ export function PhotoField({
     ])
   }
 
+  function handleFilesChange(event: ChangeEvent<HTMLInputElement>): void {
+    addFiles(Array.from(event.target.files ?? []))
+    // 同じファイルを続けて選べるよう選択状態を消す
+    event.target.value = ''
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>): void {
+    if (!event.dataTransfer.types.includes('Files')) return
+    // ドロップを受け付けるため，ブラウザが既定でファイルを開く動作を止める
+    event.preventDefault()
+    event.dataTransfer.dropEffect = remainingCount > 0 ? 'copy' : 'none'
+    setIsDragging(true)
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>): void {
+    // 子要素の上に移っただけの場合は，ドロップ先の外に出ていない
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) {
+      return
+    }
+    setIsDragging(false)
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>): void {
+    event.preventDefault()
+    setIsDragging(false)
+    addFiles(Array.from(event.dataTransfer.files))
+  }
+
   function handleNewPhotoRemove(photo: NewPhoto): void {
     URL.revokeObjectURL(photo.previewUrl)
-    setSkippedCount(0)
+    setSelection(null)
     onNewPhotosChanged(newPhotos.filter(({ id: photoId }) => photoId !== photo.id))
   }
 
@@ -83,7 +129,12 @@ export function PhotoField({
   }
 
   return (
-    <div className={css({ display: 'flex', flexWrap: 'wrap', gap: '2' })}>
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={cx(DROP_ZONE_STYLES, isDragging && DRAGGING_DROP_ZONE_STYLES)}
+    >
       {existingPhotoIds.map((photoId, index) => (
         <PhotoThumbnail
           key={photoId}
@@ -109,6 +160,7 @@ export function PhotoField({
         className={cx(FILE_INPUT_LABEL_STYLES, remainingCount <= 0 && DISABLED_FILE_INPUT_LABEL_STYLES)}
       >
         ＋ 写真を追加
+        <span className={css({ fontSize: 'xs' })}>ドロップも可</span>
         <input
           id={id}
           type="file"
@@ -119,11 +171,7 @@ export function PhotoField({
           className={css({ srOnly: true })}
         />
       </label>
-      {skippedCount > 0 && (
-        <p role="alert" className={css({ w: '100%', fontSize: 'sm', color: 'danger' })}>
-          写真は {MAX_PHOTO_COUNT} 枚までのため，選択した写真のうち {skippedCount} 枚を追加しませんでした
-        </p>
-      )}
+      {selection && <PhotoSelectionNotice selection={selection} />}
       <p className={css({ w: '100%', fontSize: 'xs', color: 'muted' })}>
         JPEG・PNG・WebP・AVIF，{MAX_PHOTO_COUNT} 枚まで，1枚 {MAX_PHOTO_BYTES / 1024 / 1024} MB まで
       </p>
