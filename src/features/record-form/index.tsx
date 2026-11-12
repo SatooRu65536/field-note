@@ -30,6 +30,7 @@ export function NewRecordForm({ search }: NewRecordFormProps) {
   return (
     <RecordFormView
       title="記録を追加"
+      canRegisterMultiple
       initialValues={createNewRecordFormValues({
         now: new Date(),
         location: toInitialLocation(search),
@@ -60,6 +61,7 @@ export function EditRecordForm({ recordId }: EditRecordFormProps) {
   return (
     <RecordFormView
       title="記録を編集"
+      canRegisterMultiple={false}
       initialValues={createEditRecordFormValues(record)}
       categories={categories}
       nameCandidates={nameCandidates.names}

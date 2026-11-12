@@ -35,6 +35,8 @@ export interface RecordDetail {
 
 export interface RecordInput {
   readonly name: string | null
+  // 名前だけが異なる記録をまとめて登録するときの，2件目以降の名前
+  readonly additionalNames: readonly string[]
   readonly categoryId: string
   readonly latitude: number
   readonly longitude: number

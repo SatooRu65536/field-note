@@ -10,6 +10,7 @@ import {
   createRecordFormData,
   MAX_MEMO_LENGTH,
   MAX_NAME_LENGTH,
+  MAX_RECORD_NAMES,
   MAX_NAME_MEMO_LENGTH,
   parseRecordFormData,
 } from './recordFormData'
@@ -26,6 +27,7 @@ function createPhoto({
 const PAYLOAD: RecordPayload = {
   recordId: 'record-1',
   name: 'コナラ',
+  additionalNames: ['クヌギ'],
   categoryId: 'seed',
   latitude: 35.1847501,
   longitude: 136.8971134,
@@ -109,6 +111,33 @@ describe('parseRecordFormData', () => {
 
     // Assert
     expect(result.ok && result.value.nameMemo).toBe('')
+  })
+
+  it('まとめて登録する名前の数が上限ちょうどの場合は受け付ける', () => {
+    // Arrange
+    const additionalNames = Array.from({ length: MAX_RECORD_NAMES - 1 }, (_, index) => `魚${index}`)
+    const formData = createRecordFormData({ ...PAYLOAD, additionalNames })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok && result.value.additionalNames).toEqual(additionalNames)
+  })
+
+  it('まとめて登録する名前の数が上限を超える場合はエラーを返す', () => {
+    // Arrange
+    const additionalNames = Array.from({ length: MAX_RECORD_NAMES }, (_, index) => `魚${index}`)
+    const formData = createRecordFormData({ ...PAYLOAD, additionalNames })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result).toEqual({
+      ok: false,
+      error: `まとめて登録できる記録は ${MAX_RECORD_NAMES} 件までです`,
+    })
   })
 
   it('ファイルを選択していない input から送られた空の File を除外する', () => {

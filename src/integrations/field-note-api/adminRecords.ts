@@ -71,6 +71,9 @@ export const updateAdminRecord = createServerFn({ method: 'POST' })
     if (!data.ok) return data
     const { recordId } = data.value
     if (!recordId) return { ok: false, error: '更新する記録が指定されていません' }
+    if (data.value.additionalNames.length > 0) {
+      return { ok: false, error: '記録の編集では名前を1つだけ指定してください' }
+    }
     return updateRecord({ db: createDatabase(), recordId, input: data.value })
   })
 

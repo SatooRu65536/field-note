@@ -28,6 +28,7 @@ describe('validateRecordFormValues', () => {
       value: {
         recordId: 'record-1',
         name: 'コナラ',
+        additionalNames: [],
         categoryId: 'seed',
         latitude: 35.18,
         longitude: 136.89,
@@ -65,8 +66,38 @@ describe('validateRecordFormValues', () => {
     expect(result.ok && result.value.photos).toEqual([file])
   })
 
+  it('新規登録では区切り文字で区切った名前ごとに記録を登録し，名前ごとのメモは保存しない', () => {
+    // Arrange
+    const values = { ...VALUES, name: 'サッパ，シロギス' }
+
+    // Act
+    const result = validateRecordFormValues({ values, recordId: undefined })
+
+    // Assert
+    expect(result.ok && result.value).toMatchObject({
+      name: 'サッパ',
+      additionalNames: ['シロギス'],
+      nameMemo: null,
+    })
+  })
+
+  it('編集では区切り文字も名前の一部として1件の記録にする', () => {
+    // Arrange
+    const values = { ...VALUES, name: 'サッパ，シロギス' }
+
+    // Act
+    const result = validateRecordFormValues({ values, recordId: 'record-1' })
+
+    // Assert
+    expect(result.ok && result.value).toMatchObject({
+      name: 'サッパ，シロギス',
+      additionalNames: [],
+    })
+  })
+
   it.each<[string, Partial<RecordFormValues>]>([
     ['名前が空で名前が分からないも選ばれていない', { name: '  ' }],
+    ['名前が区切り文字だけ', { name: '，，' }],
     ['カテゴリが未選択', { categoryId: '' }],
     ['発見場所が未指定', { location: null }],
     ['発見日時が未入力', { discoveredAt: '' }],

@@ -11,6 +11,9 @@ import { MAX_TAG_COUNT, MAX_TAG_LENGTH, normalizeTags } from './tags'
 
 export const MAX_NAME_LENGTH = 100
 
+// まとめて登録できる記録の上限数
+export const MAX_RECORD_NAMES = 20
+
 export const MAX_MEMO_LENGTH = 5000
 
 export const MAX_NAME_MEMO_LENGTH = 5000
@@ -19,6 +22,8 @@ export interface RecordPayload {
   readonly recordId?: string
   // 名前が分からない場合は null
   readonly name: string | null
+  // 名前だけが異なる記録をまとめて登録するときの，2件目以降の名前
+  readonly additionalNames: readonly string[]
   readonly categoryId: string
   readonly latitude: number
   readonly longitude: number
@@ -44,6 +49,7 @@ export function createRecordFormData(payload: RecordPayload): FormData {
   const formData = new FormData()
   if (payload.recordId) formData.set('recordId', payload.recordId)
   formData.set('name', payload.name ?? '')
+  payload.additionalNames.forEach((name) => formData.append('additionalNames', name))
   formData.set('categoryId', payload.categoryId)
   formData.set('latitude', String(payload.latitude))
   formData.set('longitude', String(payload.longitude))
@@ -68,6 +74,15 @@ const FIELDS_SCHEMA = z.object({
     .trim()
     .max(MAX_NAME_LENGTH, `名前は ${MAX_NAME_LENGTH} 文字以内で入力してください`)
     .transform((name) => (name === '' ? null : name)),
+  additionalNames: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, '名前を入力してください')
+        .max(MAX_NAME_LENGTH, `名前は ${MAX_NAME_LENGTH} 文字以内で入力してください`),
+    )
+    .max(MAX_RECORD_NAMES - 1, `まとめて登録できる記録は ${MAX_RECORD_NAMES} 件までです`),
   categoryId: z.string().min(1, 'カテゴリを選択してください'),
   latitude: COORDINATE_SCHEMA.pipe(
     z.number().min(-90, '緯度は -90 から 90 の範囲で指定してください').max(90, '緯度は -90 から 90 の範囲で指定してください'),
@@ -144,6 +159,7 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
   const fields = FIELDS_SCHEMA.safeParse({
     recordId: getOptionalString({ formData, key: 'recordId' }),
     name: getOptionalString({ formData, key: 'name' }) ?? '',
+    additionalNames: formData.getAll('additionalNames'),
     categoryId: getOptionalString({ formData, key: 'categoryId' }) ?? '',
     latitude: getOptionalString({ formData, key: 'latitude' }) ?? '',
     longitude: getOptionalString({ formData, key: 'longitude' }) ?? '',

@@ -11,6 +11,8 @@ interface SuggestionInputProps {
   readonly maxLength?: number
   readonly disabled?: boolean
   readonly onValueChanged: (value: string) => void
+  // 候補を選んだときの入力値を決める．省略した場合は候補をそのまま入力値にする
+  readonly onSuggestionSelected?: (suggestion: string) => void
 }
 
 const OPTION_STYLES = css({
@@ -29,6 +31,7 @@ export function SuggestionInput({
   maxLength,
   disabled = false,
   onValueChanged,
+  onSuggestionSelected = onValueChanged,
 }: SuggestionInputProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
@@ -45,7 +48,7 @@ export function SuggestionInput({
   function handleSelect(suggestion: string): void {
     setIsDismissed(true)
     setActiveIndex(-1)
-    onValueChanged(suggestion)
+    onSuggestionSelected(suggestion)
   }
 
   function handleOptionMouseDown({

@@ -9,6 +9,12 @@ import { createSaveNameMemoQuery } from '@/server/names/nameMemoRepository'
 
 import type { RecordCommandResult, RecordInput, RecordUpdateInput } from './types'
 
+interface RecordToCreate {
+  readonly recordId: string
+  readonly name: string | null
+  readonly photos: readonly UploadedPhoto[]
+}
+
 interface UploadedPhoto {
   readonly id: string
   readonly objectKey: string
@@ -169,10 +175,10 @@ async function runInBatch({
 }
 
 /**
- * 記録を写真・タグとともに登録し，名前ごとのメモを保存する
+ * 記録を写真・タグとともに登録し，名前ごとのメモを保存する．追加の名前がある場合は，名前だけが異なる記録をまとめて登録する
  * @param db Drizzle のクライアント
  * @param input 登録する内容
- * @returns 登録した記録の ID．カテゴリが存在しない場合はエラー
+ * @returns 最初に登録した記録の ID．カテゴリが存在しない場合はエラー
  * @throws D1・R2 への保存に失敗した場合
  */
 export async function createRecord({
@@ -186,38 +192,60 @@ export async function createRecord({
     return { ok: false, error: 'カテゴリが存在しません' }
   }
 
-  const recordId = crypto.randomUUID()
-  const uploadedPhotos = await uploadPhotos({ recordId, photos: input.photos })
-  const tagRows = createTagRows({ recordId, tags: input.tags })
-  const photoRows = createPhotoRows({ recordId, photos: uploadedPhotos, firstSortOrder: 0 })
+  // 名前だけが異なる記録をまとめて登録する．名前が分からない記録は1件だけ登録する
+  const names = input.name === null ? [null] : [input.name, ...input.additionalNames]
+  // 1件の記録を削除しても他の記録の写真が消えないよう，写真は記録ごとに保存する
+  const recordsToCreate = await names.reduce<Promise<readonly RecordToCreate[]>>(
+    async (previous, name) => {
+      const created = await previous
+      const recordId = crypto.randomUUID()
+      const photos = await uploadPhotos({ recordId, photos: input.photos }).catch(
+        async (error: unknown) => {
+          await deletePhotosQuietly(created.flatMap(({ photos }) => photos.map(({ objectKey }) => objectKey)))
+          throw error
+        },
+      )
+      return [...created, { recordId, name, photos }]
+    },
+    Promise.resolve([]),
+  )
 
   try {
     await runInBatch({
       db,
       queries: [
-        db.insert(records).values({
-          id: recordId,
-          name: input.name,
-          categoryId: input.categoryId,
-          latitude: input.latitude,
-          longitude: input.longitude,
-          discoveredAt: input.discoveredAt,
-          memo: input.memo,
-          // 記録はすべて一般公開する
-          isPublic: true,
+        ...recordsToCreate.flatMap(({ recordId, name, photos }) => {
+          const tagRows = createTagRows({ recordId, tags: input.tags })
+          const photoRows = createPhotoRows({ recordId, photos, firstSortOrder: 0 })
+          return [
+            db.insert(records).values({
+              id: recordId,
+              name,
+              categoryId: input.categoryId,
+              latitude: input.latitude,
+              longitude: input.longitude,
+              discoveredAt: input.discoveredAt,
+              memo: input.memo,
+              // 記録はすべて一般公開する
+              isPublic: true,
+            }),
+            ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
+            ...(photoRows.length > 0 ? [db.insert(recordPhotos).values([...photoRows])] : []),
+          ]
         }),
-        ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
         ...createNameMemoQueries({ db, input }),
-        ...(photoRows.length > 0 ? [db.insert(recordPhotos).values([...photoRows])] : []),
       ],
     })
   } catch (error) {
     // 記録が保存されなかった場合，参照されない写真が R2 に残らないよう削除する
-    await deletePhotosQuietly(uploadedPhotos.map(({ objectKey }) => objectKey))
+    await deletePhotosQuietly(
+      recordsToCreate.flatMap(({ photos }) => photos.map(({ objectKey }) => objectKey)),
+    )
     throw error
   }
 
-  return { ok: true, recordId }
+  const [first] = recordsToCreate
+  return first ? { ok: true, recordId: first.recordId } : { ok: false, error: '記録がありません' }
 }
 
 /**

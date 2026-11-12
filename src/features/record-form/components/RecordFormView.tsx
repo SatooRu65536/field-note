@@ -22,6 +22,7 @@ import {
   inferCategoryId,
   inferTags,
 } from '../candidates'
+import { getLastName, replaceLastName, splitRecordNames } from '../recordNames'
 import type { RecordFormValues } from '../types'
 import { LocationField } from './LocationField'
 import { NameMemoField } from './NameMemoField'
@@ -30,6 +31,8 @@ import { TagField } from './TagField'
 
 interface RecordFormViewProps {
   readonly title: string
+  // 新規登録では，区切り文字で区切った名前ごとに記録をまとめて登録できる
+  readonly canRegisterMultiple: boolean
   readonly initialValues: RecordFormValues
   readonly categories: readonly Category[]
   readonly nameCandidates: readonly NameCandidate[]
@@ -42,6 +45,7 @@ interface RecordFormViewProps {
 
 export function RecordFormView({
   title,
+  canRegisterMultiple,
   initialValues,
   categories,
   nameCandidates,
@@ -52,6 +56,10 @@ export function RecordFormView({
   onSubmitted,
 }: RecordFormViewProps) {
   const [values, setValues] = useState(initialValues)
+  const names = canRegisterMultiple ? splitRecordNames(values.name) : [values.name.trim()]
+  const isMultiple = !values.isNameUnknown && names.length > 1
+  // 候補の絞り込みには，まとめて登録する場合も入力中の最後の名前を使う
+  const nameInput = canRegisterMultiple ? getLastName(values.name) : values.name
   // 利用者が選んだカテゴリは，名前からの推定で上書きしない．編集時の登録済みのカテゴリも利用者が選んだものとみなす
   const [isCategorySelectedByUser, setIsCategorySelectedByUser] = useState(
     initialValues.categoryId !== '',
@@ -66,21 +74,30 @@ export function RecordFormView({
   }
 
   function handleNameChange(name: string): void {
+    // カテゴリ・タグの推定と名前ごとのメモには，まとめて登録する場合も最初の名前を使う
+    const firstName = (canRegisterMultiple ? splitRecordNames(name)[0] : name) ?? ''
+    const currentFirstName = names[0] ?? ''
     // 別の名前になると共有するメモも変わるため，編集中の名前ごとのメモを破棄して保存済みのメモを表示する
-    const isSameName = normalizeKana(name) === normalizeKana(values.name)
+    const isSameName = normalizeKana(firstName) === normalizeKana(currentFirstName)
     updateValues({
       name,
       ...(isSameName ? {} : { nameMemo: null }),
       ...(isCategorySelectedByUser
         ? {}
-        : { categoryId: inferCategoryId({ candidates: nameCandidates, name }) ?? '' }),
-      ...(isTagsSelectedByUser ? {} : { tags: inferTags({ candidates: nameCandidates, name }) ?? [] }),
+        : { categoryId: inferCategoryId({ candidates: nameCandidates, name: firstName }) ?? '' }),
+      ...(isTagsSelectedByUser ? {} : { tags: inferTags({ candidates: nameCandidates, name: firstName }) ?? [] }),
     })
   }
 
   function handleTagsChange(tags: readonly string[]): void {
     setIsTagsSelectedByUser(true)
     updateValues({ tags })
+  }
+
+  function handleNameSuggestionSelect(suggestion: string): void {
+    handleNameChange(
+      canRegisterMultiple ? replaceLastName({ input: values.name, name: suggestion }) : suggestion,
+    )
   }
 
   function handleCategoryChange(categoryId: string): void {
@@ -112,14 +129,19 @@ export function RecordFormView({
         />
       </FormField>
 
-      <FormField label="名前" htmlFor="record-name">
+      <FormField
+        label="名前"
+        htmlFor="record-name"
+        hint={createNameHint({ canRegisterMultiple, isMultiple, names })}
+      >
         <SuggestionInput
           id="record-name"
           value={values.name}
-          suggestions={filterNameSuggestions({ candidates: nameCandidates, input: values.name })}
+          suggestions={filterNameSuggestions({ candidates: nameCandidates, input: nameInput })}
           maxLength={MAX_NAME_LENGTH}
           disabled={values.isNameUnknown}
           onValueChanged={handleNameChange}
+          onSuggestionSelected={handleNameSuggestionSelect}
         />
         <label className={css({ display: 'flex', alignItems: 'center', gap: '2', fontSize: 'sm' })}>
           <input
@@ -131,11 +153,11 @@ export function RecordFormView({
         </label>
       </FormField>
 
-      {!values.isNameUnknown && values.name.trim() !== '' && (
+      {!values.isNameUnknown && !isMultiple && values.name.trim() !== '' && (
         <NameMemoField
           id="record-name-memo"
-          name={values.name.trim()}
-          memo={values.nameMemo ?? findSavedNameMemo({ memos: nameMemos, name: values.name })}
+          name={names[0] ?? ''}
+          memo={values.nameMemo ?? findSavedNameMemo({ memos: nameMemos, name: names[0] ?? '' })}
           onMemoChanged={(nameMemo) => updateValues({ nameMemo })}
         />
       )}
@@ -214,7 +236,7 @@ export function RecordFormView({
 
       <div className={css({ display: 'flex', gap: '3' })}>
         <Button type="submit" disabled={isSaving}>
-          {isSaving ? '保存中…' : '保存する'}
+          {createSubmitLabel({ isSaving, recordCount: isMultiple ? names.length : 1 })}
         </Button>
         <Link to="/admin/records" className={buttonRecipe({ variant: 'secondary' })}>
           キャンセル
@@ -222,4 +244,43 @@ export function RecordFormView({
       </div>
     </form>
   )
+}
+
+/**
+ * 名前の入力欄の補足を作成する
+ * @param canRegisterMultiple まとめて登録できる場合は true
+ * @param isMultiple 複数の名前が入力されている場合は true
+ * @param names 入力された名前
+ * @returns 補足．まとめて登録できない場合は undefined
+ */
+function createNameHint({
+  canRegisterMultiple,
+  isMultiple,
+  names,
+}: {
+  canRegisterMultiple: boolean
+  isMultiple: boolean
+  names: readonly string[]
+}): string | undefined {
+  if (!canRegisterMultiple) return undefined
+  if (isMultiple) return `${names.length} 件の記録をまとめて登録します（${names.join('・')}）`
+  return '「，」で区切ると，名前だけが異なる記録をまとめて登録できます'
+}
+
+/**
+ * 保存ボタンの文言を作成する
+ * @param isSaving 保存中の場合は true
+ * @param recordCount 保存する記録の件数
+ * @returns 保存ボタンの文言
+ */
+function createSubmitLabel({
+  isSaving,
+  recordCount,
+}: {
+  isSaving: boolean
+  recordCount: number
+}): string {
+  if (isSaving) return '保存中…'
+  if (recordCount > 1) return `${recordCount} 件の記録を保存する`
+  return '保存する'
 }
