@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import {
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -58,3 +59,27 @@ export const recordPhotos = sqliteTable(
   },
   (table) => [index('record_photos_record_id_index').on(table.recordId)],
 )
+
+export const recordTags = sqliteTable(
+  'record_tags',
+  {
+    recordId: text('record_id')
+      .notNull()
+      .references(() => records.id, { onDelete: 'cascade' }),
+    tag: text().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.recordId, table.tag] }),
+    index('record_tags_tag_index').on(table.tag),
+  ],
+)
+
+// 名前ごとのメモ．同じ名前の記録すべてで共有する
+export const nameMemos = sqliteTable('name_memos', {
+  // ひらがな・カタカナの違いを無視して同じ名前とみなすため，normalizeKana で揃えた名前をキーにする
+  nameKey: text('name_key').primaryKey(),
+  memo: text().notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+})

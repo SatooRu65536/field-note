@@ -10,9 +10,11 @@ import {
   createRecordFormData,
   MAX_MEMO_LENGTH,
   MAX_NAME_LENGTH,
+  MAX_NAME_MEMO_LENGTH,
   parseRecordFormData,
 } from './recordFormData'
 import type { RecordPayload } from './recordFormData'
+import { MAX_TAG_COUNT, MAX_TAG_LENGTH } from './tags'
 
 function createPhoto({
   type = 'image/jpeg',
@@ -29,6 +31,8 @@ const PAYLOAD: RecordPayload = {
   longitude: 136.8971134,
   discoveredAt: new Date('2026-11-13T01:02:03.000Z'),
   memo: '公園の入口で拾った',
+  tags: ['どんぐり', '秋'],
+  nameMemo: 'ブナ科の落葉高木',
   isPublic: true,
   photos: [],
   removedPhotoIds: ['photo-1'],
@@ -61,6 +65,51 @@ describe('parseRecordFormData', () => {
 
     // Assert
     expect(result.ok && result.value.name).toBeNull()
+  })
+
+  it('タグを正規化する', () => {
+    // Arrange
+    const formData = createRecordFormData({ ...PAYLOAD, tags: ['#秋', '秋', ' '] })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok && result.value.tags).toEqual(['秋'])
+  })
+
+  it('タグの文字数は先頭の # と空白を除いて数える', () => {
+    // Arrange
+    const tag = 'あ'.repeat(MAX_TAG_LENGTH)
+    const formData = createRecordFormData({ ...PAYLOAD, tags: [` #${tag} `] })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok && result.value.tags).toEqual([tag])
+  })
+
+  it('名前ごとのメモを変更しない場合は null にする', () => {
+    // Arrange
+    const formData = createRecordFormData({ ...PAYLOAD, nameMemo: null })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok && result.value.nameMemo).toBeNull()
+  })
+
+  it('名前ごとのメモを空にした場合は空文字にする', () => {
+    // Arrange
+    const formData = createRecordFormData({ ...PAYLOAD, nameMemo: '  ' })
+
+    // Act
+    const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result.ok && result.value.nameMemo).toBe('')
   })
 
   it('ファイルを選択していない input から送られた空の File を除外する', () => {
@@ -97,6 +146,9 @@ describe('parseRecordFormData', () => {
   it.each([
     ['名前', { name: 'あ'.repeat(MAX_NAME_LENGTH) }],
     ['メモ', { memo: 'あ'.repeat(MAX_MEMO_LENGTH) }],
+    ['名前のメモ', { nameMemo: 'あ'.repeat(MAX_NAME_MEMO_LENGTH) }],
+    ['タグの文字数', { tags: ['あ'.repeat(MAX_TAG_LENGTH)] }],
+    ['タグの個数', { tags: Array.from({ length: MAX_TAG_COUNT }, (_, index) => `タグ${index}`) }],
   ])('%sが上限ちょうどの場合は受け付ける', (_, override) => {
     // Arrange
     const formData = createRecordFormData({ ...PAYLOAD, ...override })
@@ -114,6 +166,21 @@ describe('parseRecordFormData', () => {
       'メモ',
       { memo: 'あ'.repeat(MAX_MEMO_LENGTH + 1) },
       `メモは ${MAX_MEMO_LENGTH} 文字以内で入力してください`,
+    ],
+    [
+      '名前のメモ',
+      { nameMemo: 'あ'.repeat(MAX_NAME_MEMO_LENGTH + 1) },
+      `名前のメモは ${MAX_NAME_MEMO_LENGTH} 文字以内で入力してください`,
+    ],
+    [
+      'タグの文字数',
+      { tags: ['あ'.repeat(MAX_TAG_LENGTH + 1)] },
+      `タグは ${MAX_TAG_LENGTH} 文字以内で入力してください`,
+    ],
+    [
+      'タグの個数',
+      { tags: Array.from({ length: MAX_TAG_COUNT + 1 }, (_, index) => `タグ${index}`) },
+      `タグは ${MAX_TAG_COUNT} 個までです`,
     ],
   ])('%sが上限を超える場合はエラーを返す', (_, override, error) => {
     // Arrange

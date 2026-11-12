@@ -7,20 +7,29 @@ import { Button } from '@/components/ui/Button'
 import { FieldGroup } from '@/components/ui/FieldGroup'
 import { FormField } from '@/components/ui/FormField'
 import { buttonRecipe, INPUT_STYLES } from '@/components/ui/styles'
+import { SuggestionInput } from '@/components/ui/SuggestionInput'
+import type { NameCandidate, NameMemo } from '@/integrations/field-note-api/adminRecords'
+import { normalizeKana } from '@/integrations/intl/normalizeKana'
 import type { Category } from '@/integrations/field-note-api/categories'
 import {
   MAX_MEMO_LENGTH,
   MAX_NAME_LENGTH,
 } from '@/integrations/field-note-api/recordFormData'
 
+import { filterNameSuggestions, findSavedNameMemo } from '../candidates'
 import type { RecordFormValues } from '../types'
 import { LocationField } from './LocationField'
+import { NameMemoField } from './NameMemoField'
 import { PhotoField } from './PhotoField'
+import { TagField } from './TagField'
 
 interface RecordFormViewProps {
   readonly title: string
   readonly initialValues: RecordFormValues
   readonly categories: readonly Category[]
+  readonly nameCandidates: readonly NameCandidate[]
+  readonly nameMemos: readonly NameMemo[]
+  readonly tagCandidates: readonly string[]
   readonly isSaving: boolean
   readonly error: string | null
   readonly onSubmitted: (values: RecordFormValues) => void
@@ -30,6 +39,9 @@ export function RecordFormView({
   title,
   initialValues,
   categories,
+  nameCandidates,
+  nameMemos,
+  tagCandidates,
   isSaving,
   error,
   onSubmitted,
@@ -38,6 +50,12 @@ export function RecordFormView({
 
   function updateValues(changes: Partial<RecordFormValues>): void {
     setValues((current) => ({ ...current, ...changes }))
+  }
+
+  function handleNameChange(name: string): void {
+    // 別の名前になると共有するメモも変わるため，編集中の名前ごとのメモを破棄して保存済みのメモを表示する
+    const isSameName = normalizeKana(name) === normalizeKana(values.name)
+    updateValues(isSameName ? { name } : { name, nameMemo: null })
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -65,14 +83,13 @@ export function RecordFormView({
       </FormField>
 
       <FormField label="名前" htmlFor="record-name">
-        <input
+        <SuggestionInput
           id="record-name"
-          type="text"
           value={values.name}
+          suggestions={filterNameSuggestions({ candidates: nameCandidates, input: values.name })}
           maxLength={MAX_NAME_LENGTH}
           disabled={values.isNameUnknown}
-          onChange={(event) => updateValues({ name: event.target.value })}
-          className={INPUT_STYLES}
+          onValueChanged={handleNameChange}
         />
         <label className={css({ display: 'flex', alignItems: 'center', gap: '2', fontSize: 'sm' })}>
           <input
@@ -83,6 +100,15 @@ export function RecordFormView({
           名前が分からない
         </label>
       </FormField>
+
+      {!values.isNameUnknown && values.name.trim() !== '' && (
+        <NameMemoField
+          id="record-name-memo"
+          name={values.name.trim()}
+          memo={values.nameMemo ?? findSavedNameMemo({ memos: nameMemos, name: values.name })}
+          onMemoChanged={(nameMemo) => updateValues({ nameMemo })}
+        />
+      )}
 
       <FormField label="カテゴリ" htmlFor="record-category">
         <select
@@ -127,6 +153,15 @@ export function RecordFormView({
           className={INPUT_STYLES}
         />
       </FormField>
+
+      <FieldGroup legend="タグ">
+        <TagField
+          id="record-tags"
+          tags={values.tags}
+          candidates={tagCandidates}
+          onTagsChanged={(tags) => updateValues({ tags })}
+        />
+      </FieldGroup>
 
       <label className={css({ display: 'flex', alignItems: 'center', gap: '2' })}>
         <input

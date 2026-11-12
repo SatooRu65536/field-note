@@ -1,0 +1,43 @@
+import type { NameCandidate, NameMemo } from '@/integrations/field-note-api/adminRecords'
+import { normalizeKana } from '@/integrations/intl/normalizeKana'
+
+// 名前の候補として一度に表示する上限
+export const MAX_NAME_SUGGESTIONS = 8
+
+/**
+ * 入力した名前で始まる過去の名前を，ひらがな・カタカナの違いを無視して探す
+ * @param candidates 記録の多い順に並んだ過去の名前
+ * @param input 入力中の名前
+ * @returns 候補の名前．入力が空の場合や，入力と同じ名前だけの場合は空
+ */
+export function filterNameSuggestions({
+  candidates,
+  input,
+}: {
+  candidates: readonly NameCandidate[]
+  input: string
+}): readonly string[] {
+  const prefix = normalizeKana(input)
+  if (prefix === '') return []
+  return candidates
+    .map(({ name }) => name)
+    .filter((name) => name !== input.trim() && normalizeKana(name).startsWith(prefix))
+    .slice(0, MAX_NAME_SUGGESTIONS)
+}
+
+/**
+ * 名前に保存済みのメモを，ひらがな・カタカナの違いを無視して探す
+ * @param memos 保存済みの名前ごとのメモ
+ * @param name 記録の名前
+ * @returns メモ．保存済みのメモがない場合は空文字
+ */
+export function findSavedNameMemo({
+  memos,
+  name,
+}: {
+  memos: readonly NameMemo[]
+  name: string
+}): string {
+  const nameKey = normalizeKana(name)
+  return memos.find((memo) => memo.nameKey === nameKey)?.memo ?? ''
+}

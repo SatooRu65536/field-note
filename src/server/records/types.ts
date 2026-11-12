@@ -26,6 +26,9 @@ export interface RecordDetail {
   readonly discoveredAt: Date
   readonly memo: string
   readonly isPublic: boolean
+  readonly tags: readonly string[]
+  // 名前ごとのメモ．名前が分からない記録や，メモがない場合は空文字
+  readonly nameMemo: string
   readonly photoIds: readonly string[]
   readonly updatedAt: Date
 }
@@ -37,6 +40,9 @@ export interface RecordInput {
   readonly longitude: number
   readonly discoveredAt: Date
   readonly memo: string
+  readonly tags: readonly string[]
+  // 名前ごとのメモ．null の場合は変更しない
+  readonly nameMemo: string | null
   readonly isPublic: boolean
   // 新たに追加する写真
   readonly photos: readonly File[]

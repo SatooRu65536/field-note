@@ -7,9 +7,13 @@ import {
   MAX_TOTAL_PHOTO_BYTES,
 } from '@/constants/photos'
 
+import { MAX_TAG_COUNT, MAX_TAG_LENGTH, normalizeTags } from './tags'
+
 export const MAX_NAME_LENGTH = 100
 
 export const MAX_MEMO_LENGTH = 5000
+
+export const MAX_NAME_MEMO_LENGTH = 5000
 
 export interface RecordPayload {
   readonly recordId?: string
@@ -20,6 +24,9 @@ export interface RecordPayload {
   readonly longitude: number
   readonly discoveredAt: Date
   readonly memo: string
+  readonly tags: readonly string[]
+  // 名前ごとのメモ．null の場合は変更しない
+  readonly nameMemo: string | null
   readonly isPublic: boolean
   readonly photos: readonly File[]
   readonly removedPhotoIds: readonly string[]
@@ -43,11 +50,16 @@ export function createRecordFormData(payload: RecordPayload): FormData {
   formData.set('longitude', String(payload.longitude))
   formData.set('discoveredAt', payload.discoveredAt.toISOString())
   formData.set('memo', payload.memo)
+  if (payload.nameMemo !== null) formData.set('nameMemo', payload.nameMemo)
+  payload.tags.forEach((tag) => formData.append('tags', tag))
   formData.set('isPublic', String(payload.isPublic))
   payload.photos.forEach((photo) => formData.append('photos', photo))
   payload.removedPhotoIds.forEach((id) => formData.append('removedPhotoIds', id))
   return formData
 }
+
+// 正規化前のタグの上限数．正規化後の上限 MAX_TAG_COUNT とは別に，過大な入力を早めに拒否する
+const MAX_RAW_TAG_COUNT = 100
 
 const COORDINATE_SCHEMA = z.string().trim().min(1, '発見場所を指定してください').pipe(z.coerce.number())
 
@@ -69,6 +81,23 @@ const FIELDS_SCHEMA = z.object({
     .datetime({ offset: true, message: '発見日時が不正です' })
     .transform((value) => new Date(value)),
   memo: z.string().max(MAX_MEMO_LENGTH, `メモは ${MAX_MEMO_LENGTH} 文字以内で入力してください`),
+  nameMemo: z
+    .string()
+    .trim()
+    .max(MAX_NAME_MEMO_LENGTH, `名前のメモは ${MAX_NAME_MEMO_LENGTH} 文字以内で入力してください`)
+    .nullable(),
+  tags: z
+    .array(z.string())
+    .max(MAX_RAW_TAG_COUNT, `タグは ${MAX_TAG_COUNT} 個までです`)
+    // 先頭の # や空白を除いた後の文字数で検証する
+    .transform(normalizeTags)
+    .pipe(
+      z
+        .array(
+          z.string().max(MAX_TAG_LENGTH, `タグは ${MAX_TAG_LENGTH} 文字以内で入力してください`),
+        )
+        .max(MAX_TAG_COUNT, `タグは ${MAX_TAG_COUNT} 個までです`),
+    ),
   isPublic: z
     .enum(['true', 'false'], { message: '公開設定が不正です' })
     .transform((value) => value === 'true'),
@@ -125,6 +154,8 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
     longitude: getOptionalString({ formData, key: 'longitude' }) ?? '',
     discoveredAt: getOptionalString({ formData, key: 'discoveredAt' }) ?? '',
     memo: getOptionalString({ formData, key: 'memo' }) ?? '',
+    nameMemo: getOptionalString({ formData, key: 'nameMemo' }) ?? null,
+    tags: formData.getAll('tags'),
     isPublic: getOptionalString({ formData, key: 'isPublic' }) ?? 'false',
     removedPhotoIds: formData.getAll('removedPhotoIds'),
   })

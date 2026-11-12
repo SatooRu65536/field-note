@@ -4,7 +4,15 @@ import { z } from 'zod'
 
 import { createDatabase } from '@/server/lib/db/client'
 import { createRecord, deleteRecord, updateRecord } from '@/server/records/recordCommands'
-import { findRecord, listAllRecords } from '@/server/records/recordRepository'
+import {
+  findRecord,
+  listAllRecords,
+  listNameCandidates,
+  listTagCandidates,
+} from '@/server/records/recordRepository'
+import { listNameMemos } from '@/server/names/nameMemoRepository'
+import type { NameMemo } from '@/server/names/nameMemoRepository'
+import type { NameCandidate } from '@/server/records/nameCandidates'
 import type { RecordCommandResult } from '@/server/records/types'
 
 import { adminMiddleware } from './adminMiddleware'
@@ -12,7 +20,7 @@ import { parseRecordFormData } from './recordFormData'
 import type { RecordPayloadParseResult } from './recordFormData'
 import { QUERY_KEYS } from './queryKeys'
 
-export type { RecordCommandResult }
+export type { NameCandidate, NameMemo, RecordCommandResult }
 
 /**
  * サーバー関数の入力が FormData であることを確かめ，記録の登録・更新内容に変換する
@@ -34,6 +42,19 @@ const getAdminRecord = createServerFn({ method: 'GET' })
   .handler(async ({ data }) =>
     findRecord({ db: createDatabase(), recordId: data.recordId, includePrivate: true }),
   )
+
+const getAdminNameCandidates = createServerFn({ method: 'GET' })
+  .middleware([adminMiddleware])
+  .handler(async () => {
+    const db = createDatabase()
+    // 記録を削除・改名しても名前ごとのメモは残るため，名前とは別にすべてのメモを返す
+    const [names, memos] = await Promise.all([listNameCandidates(db), listNameMemos(db)])
+    return { names, memos }
+  })
+
+const getAdminTagCandidates = createServerFn({ method: 'GET' })
+  .middleware([adminMiddleware])
+  .handler(async () => listTagCandidates(createDatabase()))
 
 export const createAdminRecord = createServerFn({ method: 'POST' })
   .middleware([adminMiddleware])
@@ -80,5 +101,27 @@ export function adminRecordQueryOptions(recordId: string) {
   return queryOptions({
     queryKey: [...QUERY_KEYS.adminRecords, 'detail', recordId],
     queryFn: () => getAdminRecord({ data: { recordId } }),
+  })
+}
+
+/**
+ * 過去の記録に使われた名前と，保存済みの名前ごとのメモを取得するクエリの設定を作成する
+ * @returns クエリの設定
+ */
+export function nameCandidatesQueryOptions() {
+  return queryOptions({
+    queryKey: QUERY_KEYS.nameCandidates,
+    queryFn: () => getAdminNameCandidates(),
+  })
+}
+
+/**
+ * 過去の記録に付けたタグを取得するクエリの設定を作成する
+ * @returns クエリの設定
+ */
+export function tagCandidatesQueryOptions() {
+  return queryOptions({
+    queryKey: QUERY_KEYS.tagCandidates,
+    queryFn: () => getAdminTagCandidates(),
   })
 }

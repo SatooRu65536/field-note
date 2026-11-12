@@ -45,6 +45,9 @@ export function validateRecordFormValues({
       longitude: values.location.longitude,
       discoveredAt,
       memo: values.memo.trim(),
+      tags: values.tags,
+      // 名前が分からない記録には名前ごとのメモを保存しない
+      nameMemo: values.isNameUnknown ? null : values.nameMemo,
       isPublic: values.isPublic,
       photos: values.newPhotos.map(({ file }) => file),
       removedPhotoIds: values.removedPhotoIds,

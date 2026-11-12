@@ -10,6 +10,8 @@ const VALUES: RecordFormValues = {
   location: { latitude: 35.18, longitude: 136.89 },
   discoveredAt: '2026-11-13T09:30',
   memo: ' 公園で拾った \n',
+  tags: ['どんぐり'],
+  nameMemo: 'ブナ科の落葉高木',
   isPublic: true,
   existingPhotoIds: ['photo-1', 'photo-2'],
   removedPhotoIds: ['photo-2'],
@@ -32,6 +34,8 @@ describe('validateRecordFormValues', () => {
         longitude: 136.89,
         discoveredAt: new Date(2026, 10, 13, 9, 30),
         memo: '公園で拾った',
+        tags: ['どんぐり'],
+        nameMemo: 'ブナ科の落葉高木',
         isPublic: true,
         photos: [],
         removedPhotoIds: ['photo-2'],
@@ -39,7 +43,7 @@ describe('validateRecordFormValues', () => {
     })
   })
 
-  it('名前が分からない場合は入力された名前を使わず null にする', () => {
+  it('名前が分からない場合は入力された名前・名前ごとのメモを使わず null にする', () => {
     // Arrange
     const values = { ...VALUES, isNameUnknown: true }
 
@@ -48,6 +52,7 @@ describe('validateRecordFormValues', () => {
 
     // Assert
     expect(result.ok && result.value.name).toBeNull()
+    expect(result.ok && result.value.nameMemo).toBeNull()
   })
 
   it('新たに選択した写真のファイルを送信する', () => {

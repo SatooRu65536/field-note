@@ -1,8 +1,11 @@
-import { and, asc, between, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, between, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 
 import type { Database } from '@/server/lib/db/client'
-import { recordPhotos, records } from '@/server/lib/db/schema'
+import { recordPhotos, records, recordTags } from '@/server/lib/db/schema'
+import { findNameMemo } from '@/server/names/nameMemoRepository'
 
+import { mergeNameCandidates } from './nameCandidates'
+import type { NameCandidate } from './nameCandidates'
 import type { Bounds, RecordDetail, RecordSummary } from './types'
 
 // 地図に一度に表示するピンの上限．表示範囲が広すぎる場合に応答が肥大化するのを防ぐ
@@ -73,7 +76,7 @@ export async function listAllRecords(db: Database): Promise<readonly RecordSumma
 }
 
 /**
- * 記録を写真とともに取得する
+ * 記録を写真・タグ・名前ごとのメモとともに取得する
  * @param db Drizzle のクライアント
  * @param recordId 取得する記録の ID
  * @param includePrivate 非公開の記録も取得する場合は true
@@ -92,11 +95,19 @@ export async function findRecord({
   if (!record) return null
   if (!record.isPublic && !includePrivate) return null
 
-  const photos = await db
-    .select({ id: recordPhotos.id })
-    .from(recordPhotos)
-    .where(eq(recordPhotos.recordId, recordId))
-    .orderBy(asc(recordPhotos.sortOrder))
+  const [photos, tags, nameMemo] = await Promise.all([
+    db
+      .select({ id: recordPhotos.id })
+      .from(recordPhotos)
+      .where(eq(recordPhotos.recordId, recordId))
+      .orderBy(asc(recordPhotos.sortOrder)),
+    db
+      .select({ tag: recordTags.tag })
+      .from(recordTags)
+      .where(eq(recordTags.recordId, recordId))
+      .orderBy(asc(recordTags.tag)),
+    record.name ? findNameMemo({ db, name: record.name }) : Promise.resolve(''),
+  ])
 
   return {
     id: record.id,
@@ -107,6 +118,8 @@ export async function findRecord({
     discoveredAt: record.discoveredAt,
     memo: record.memo,
     isPublic: record.isPublic,
+    tags: tags.map(({ tag }) => tag),
+    nameMemo,
     photoIds: photos.map(({ id }) => id),
     updatedAt: record.updatedAt,
   }
@@ -141,4 +154,34 @@ export async function findPhotoLocation({
     .innerJoin(records, eq(recordPhotos.recordId, records.id))
     .where(eq(recordPhotos.id, photoId))
   return photo ?? null
+}
+
+/**
+ * 過去の記録に使われた名前を，ひらがな・カタカナの違いをまとめて記録の多い順に取得する
+ * @param db Drizzle のクライアント
+ * @returns 名前と記録の件数
+ */
+export async function listNameCandidates(db: Database): Promise<readonly NameCandidate[]> {
+  const names = await db
+    .select({ name: records.name, recordCount: count() })
+    .from(records)
+    .where(isNotNull(records.name))
+    .groupBy(records.name)
+  return mergeNameCandidates(
+    names.flatMap(({ name, recordCount }) => (name === null ? [] : [{ name, recordCount }])),
+  )
+}
+
+/**
+ * 過去の記録に付けたタグを，使われた回数の多い順に取得する
+ * @param db Drizzle のクライアント
+ * @returns タグ
+ */
+export async function listTagCandidates(db: Database): Promise<readonly string[]> {
+  const tags = await db
+    .select({ tag: recordTags.tag })
+    .from(recordTags)
+    .groupBy(recordTags.tag)
+    .orderBy(desc(count()), asc(recordTags.tag))
+  return tags.map(({ tag }) => tag)
 }

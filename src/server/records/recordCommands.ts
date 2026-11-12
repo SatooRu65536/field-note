@@ -3,8 +3,9 @@ import type { BatchItem } from 'drizzle-orm/batch'
 
 import { MAX_PHOTO_COUNT } from '@/constants/photos'
 import type { Database } from '@/server/lib/db/client'
-import { categories, recordPhotos, records } from '@/server/lib/db/schema'
+import { categories, recordPhotos, records, recordTags } from '@/server/lib/db/schema'
 import { deletePhotos, putPhoto } from '@/server/lib/photo-storage/photoStorage'
+import { createSaveNameMemoQuery } from '@/server/names/nameMemoRepository'
 
 import type { RecordCommandResult, RecordInput, RecordUpdateInput } from './types'
 
@@ -92,6 +93,39 @@ async function hasCategory({
 }
 
 /**
+ * 記録に付けるタグの行を作成する
+ * @param recordId 記録の ID
+ * @param tags タグ
+ * @returns record_tags に挿入する行
+ */
+function createTagRows({
+  recordId,
+  tags,
+}: {
+  recordId: string
+  tags: readonly string[]
+}): readonly { readonly recordId: string; readonly tag: string }[] {
+  return tags.map((tag) => ({ recordId, tag }))
+}
+
+/**
+ * 名前ごとのメモを保存するクエリを作成する
+ * @param db Drizzle のクライアント
+ * @param input 登録・更新する内容
+ * @returns クエリ．名前が分からない記録や，メモを変更しない場合は空
+ */
+function createNameMemoQueries({
+  db,
+  input,
+}: {
+  db: Database
+  input: RecordInput
+}): readonly BatchItem<'sqlite'>[] {
+  if (input.name === null || input.nameMemo === null) return []
+  return [createSaveNameMemoQuery({ db, name: input.name, memo: input.nameMemo })]
+}
+
+/**
  * 保存した写真の行を，指定した表示順から連番で作成する
  * @param recordId 記録の ID
  * @param photos 保存した写真
@@ -135,7 +169,7 @@ async function runInBatch({
 }
 
 /**
- * 記録を写真とともに登録する
+ * 記録を写真・タグとともに登録し，名前ごとのメモを保存する
  * @param db Drizzle のクライアント
  * @param input 登録する内容
  * @returns 登録した記録の ID．カテゴリが存在しない場合はエラー
@@ -154,6 +188,7 @@ export async function createRecord({
 
   const recordId = crypto.randomUUID()
   const uploadedPhotos = await uploadPhotos({ recordId, photos: input.photos })
+  const tagRows = createTagRows({ recordId, tags: input.tags })
   const photoRows = createPhotoRows({ recordId, photos: uploadedPhotos, firstSortOrder: 0 })
 
   try {
@@ -170,6 +205,8 @@ export async function createRecord({
           memo: input.memo,
           isPublic: input.isPublic,
         }),
+        ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
+        ...createNameMemoQueries({ db, input }),
         ...(photoRows.length > 0 ? [db.insert(recordPhotos).values([...photoRows])] : []),
       ],
     })
@@ -183,7 +220,7 @@ export async function createRecord({
 }
 
 /**
- * 記録を更新し，写真の追加・削除を行う
+ * 記録を更新し，写真の追加・削除，タグの置き換え，名前ごとのメモの保存を行う
  * @param db Drizzle のクライアント
  * @param recordId 更新する記録の ID
  * @param input 更新後の内容
@@ -225,6 +262,7 @@ export async function updateRecord({
   const firstSortOrder = (sortOrderResult?.value ?? -1) + 1
 
   const uploadedPhotos = await uploadPhotos({ recordId, photos: input.photos })
+  const tagRows = createTagRows({ recordId, tags: input.tags })
   const photoRows = createPhotoRows({ recordId, photos: uploadedPhotos, firstSortOrder })
   const removedPhotoIds = removedPhotos.map(({ id }) => id)
 
@@ -245,6 +283,9 @@ export async function updateRecord({
             updatedAt: new Date(),
           })
           .where(eq(records.id, recordId)),
+        db.delete(recordTags).where(eq(recordTags.recordId, recordId)),
+        ...(tagRows.length > 0 ? [db.insert(recordTags).values([...tagRows])] : []),
+        ...createNameMemoQueries({ db, input }),
         ...(removedPhotoIds.length > 0
           ? [
               db
@@ -271,7 +312,7 @@ export async function updateRecord({
 }
 
 /**
- * 記録を写真とともに削除する
+ * 記録を写真・タグとともに削除する
  * @param db Drizzle のクライアント
  * @param recordId 削除する記録の ID
  * @returns 削除した記録の ID．記録が存在しない場合はエラー
@@ -289,7 +330,7 @@ export async function deleteRecord({
     .from(recordPhotos)
     .where(eq(recordPhotos.recordId, recordId))
 
-  // 写真の行は外部キーの ON DELETE CASCADE で削除される
+  // 写真・タグの行は外部キーの ON DELETE CASCADE で削除される
   const deleted = await db
     .delete(records)
     .where(eq(records.id, recordId))

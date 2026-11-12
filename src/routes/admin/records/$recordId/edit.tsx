@@ -1,11 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { EditRecordForm } from '@/features/record-form'
-import { adminRecordQueryOptions } from '@/integrations/field-note-api/adminRecords'
+import {
+  adminRecordQueryOptions,
+  nameCandidatesQueryOptions,
+  tagCandidatesQueryOptions,
+} from '@/integrations/field-note-api/adminRecords'
 
 export const Route = createFileRoute('/admin/records/$recordId/edit')({
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(adminRecordQueryOptions(params.recordId)),
+    Promise.all([
+      context.queryClient.ensureQueryData(adminRecordQueryOptions(params.recordId)),
+      context.queryClient.ensureQueryData(nameCandidatesQueryOptions()),
+      context.queryClient.ensureQueryData(tagCandidatesQueryOptions()),
+    ]),
   component: EditRecordPage,
 })
 
