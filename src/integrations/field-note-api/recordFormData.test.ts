@@ -8,11 +8,13 @@ import {
 
 import {
   createRecordFormData,
+  createRecordPhotosFormData,
   MAX_MEMO_LENGTH,
   MAX_NAME_LENGTH,
   MAX_RECORD_NAMES,
   MAX_NAME_MEMO_LENGTH,
   parseRecordFormData,
+  parseRecordPhotosFormData,
 } from './recordFormData'
 import type { RecordPayload } from './recordFormData'
 import { MAX_TAG_COUNT, MAX_TAG_LENGTH } from './tags'
@@ -316,6 +318,71 @@ describe('parseRecordFormData', () => {
 
     // Act
     const result = parseRecordFormData(formData)
+
+    // Assert
+    expect(result).toEqual({
+      ok: false,
+      error: '写真は JPEG・PNG・WebP・AVIF のいずれかを選択してください',
+    })
+  })
+})
+
+describe('createRecordPhotosFormData と parseRecordPhotosFormData', () => {
+  it('作成した FormData を解析すると元の内容に戻る', () => {
+    // Arrange
+    const payload = { recordId: 'record-1', photos: [createPhoto(), createPhoto()] }
+    const formData = createRecordPhotosFormData(payload)
+
+    // Act
+    const result = parseRecordPhotosFormData(formData)
+
+    // Assert
+    expect(result).toEqual({ ok: true, value: payload })
+  })
+})
+
+describe('parseRecordPhotosFormData', () => {
+  it('記録が指定されていない場合はエラーを返す', () => {
+    // Arrange
+    const formData = createRecordPhotosFormData({ recordId: '', photos: [createPhoto()] })
+
+    // Act
+    const result = parseRecordPhotosFormData(formData)
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: '写真を追加する記録が指定されていません' })
+  })
+
+  it('写真がない場合はエラーを返す', () => {
+    // Arrange
+    const formData = createRecordPhotosFormData({ recordId: 'record-1', photos: [] })
+
+    // Act
+    const result = parseRecordPhotosFormData(formData)
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: '追加する写真がありません' })
+  })
+
+  it('写真が上限枚数を超える場合はエラーを返す', () => {
+    // Arrange
+    const photos = Array.from({ length: MAX_PHOTO_COUNT + 1 }, () => createPhoto())
+    const formData = createRecordPhotosFormData({ recordId: 'record-1', photos })
+
+    // Act
+    const result = parseRecordPhotosFormData(formData)
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: `写真は ${MAX_PHOTO_COUNT} 枚までです` })
+  })
+
+  it('対応していない形式の写真はエラーを返す', () => {
+    // Arrange
+    const photo = createPhoto({ type: 'image/heic' })
+    const formData = createRecordPhotosFormData({ recordId: 'record-1', photos: [photo] })
+
+    // Act
+    const result = parseRecordPhotosFormData(formData)
 
     // Assert
     expect(result).toEqual({

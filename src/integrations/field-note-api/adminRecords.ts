@@ -3,7 +3,12 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
 import { createDatabase } from '@/server/lib/db/client'
-import { createRecord, deleteRecord, updateRecord } from '@/server/records/recordCommands'
+import {
+  addRecordPhotos,
+  createRecord,
+  deleteRecord,
+  updateRecord,
+} from '@/server/records/recordCommands'
 import {
   findRecord,
   listAllRecords,
@@ -16,8 +21,8 @@ import type { NameCandidate } from '@/server/records/nameCandidates'
 import type { RecordCommandResult } from '@/server/records/types'
 
 import { adminMiddleware } from './adminMiddleware'
-import { parseRecordFormData } from './recordFormData'
-import type { RecordPayloadParseResult } from './recordFormData'
+import { parseRecordFormData, parseRecordPhotosFormData } from './recordFormData'
+import type { RecordPayloadParseResult, RecordPhotosPayloadParseResult } from './recordFormData'
 import { QUERY_KEYS } from './queryKeys'
 
 export type { NameCandidate, NameMemo, RecordCommandResult }
@@ -30,6 +35,16 @@ export type { NameCandidate, NameMemo, RecordCommandResult }
 function validateFormData(data: unknown): RecordPayloadParseResult {
   if (!(data instanceof FormData)) return { ok: false, error: '入力内容が不正です' }
   return parseRecordFormData(data)
+}
+
+/**
+ * サーバー関数の入力が FormData であることを確かめ，記録に写真を追加する内容に変換する
+ * @param data サーバー関数の入力
+ * @returns 写真を追加する記録と写真．入力が不正な場合はエラーメッセージ
+ */
+function validatePhotosFormData(data: unknown): RecordPhotosPayloadParseResult {
+  if (!(data instanceof FormData)) return { ok: false, error: '入力内容が不正です' }
+  return parseRecordPhotosFormData(data)
 }
 
 const getAdminRecords = createServerFn({ method: 'GET' })
@@ -75,6 +90,14 @@ export const updateAdminRecord = createServerFn({ method: 'POST' })
       return { ok: false, error: '記録の編集では名前を1つだけ指定してください' }
     }
     return updateRecord({ db: createDatabase(), recordId, input: data.value })
+  })
+
+export const addAdminRecordPhotos = createServerFn({ method: 'POST' })
+  .middleware([adminMiddleware])
+  .validator(validatePhotosFormData)
+  .handler(async ({ data }): Promise<RecordCommandResult> => {
+    if (!data.ok) return data
+    return addRecordPhotos({ db: createDatabase(), ...data.value })
   })
 
 export const deleteAdminRecord = createServerFn({ method: 'POST' })

@@ -1,4 +1,4 @@
-import { and, eq, inArray, max } from 'drizzle-orm'
+import { and, count, eq, inArray, max } from 'drizzle-orm'
 import type { BatchItem } from 'drizzle-orm/batch'
 
 import { MAX_PHOTO_COUNT } from '@/constants/photos'
@@ -157,6 +157,26 @@ function createPhotoRows({
 }
 
 /**
+ * 記録に写真を追加するときの，最初の写真の表示順を求める
+ * @param db Drizzle のクライアント
+ * @param recordId 記録の ID
+ * @returns 登録済みの写真より後ろになる表示順．写真がない場合は 0
+ */
+async function findNextPhotoSortOrder({
+  db,
+  recordId,
+}: {
+  db: Database
+  recordId: string
+}): Promise<number> {
+  const [result] = await db
+    .select({ value: max(recordPhotos.sortOrder) })
+    .from(recordPhotos)
+    .where(eq(recordPhotos.recordId, recordId))
+  return (result?.value ?? -1) + 1
+}
+
+/**
  * クエリをまとめて1つのトランザクションとして実行する．クエリが空の場合は何もしない
  * @param db Drizzle のクライアント
  * @param queries 実行するクエリ
@@ -286,12 +306,7 @@ export async function updateRecord({
     return { ok: false, error: `写真は ${MAX_PHOTO_COUNT} 枚までです` }
   }
 
-  const [sortOrderResult] = await db
-    .select({ value: max(recordPhotos.sortOrder) })
-    .from(recordPhotos)
-    .where(eq(recordPhotos.recordId, recordId))
-  const firstSortOrder = (sortOrderResult?.value ?? -1) + 1
-
+  const firstSortOrder = await findNextPhotoSortOrder({ db, recordId })
   const uploadedPhotos = await uploadPhotos({ recordId, photos: input.photos })
   const tagRows = createTagRows({ recordId, tags: input.tags })
   const photoRows = createPhotoRows({ recordId, photos: uploadedPhotos, firstSortOrder })
@@ -340,6 +355,61 @@ export async function updateRecord({
 
   // 記録の更新は確定しているため，写真の削除に失敗しても保存は成功として扱う
   await deletePhotosQuietly(removedPhotos.map(({ objectKey }) => objectKey))
+  return { ok: true, recordId }
+}
+
+/**
+ * 登録済みの記録に，記録の内容を変えずに写真だけを追加する
+ * @param db Drizzle のクライアント
+ * @param recordId 写真を追加する記録の ID
+ * @param photos 追加する写真
+ * @returns 写真を追加した記録の ID．記録が存在しない場合や写真の枚数が上限を超える場合はエラー
+ * @throws D1・R2 への保存に失敗した場合
+ */
+export async function addRecordPhotos({
+  db,
+  recordId,
+  photos,
+}: {
+  db: Database
+  recordId: string
+  photos: readonly File[]
+}): Promise<RecordCommandResult> {
+  const [record] = await db
+    .select({ id: records.id })
+    .from(records)
+    .where(eq(records.id, recordId))
+  if (!record) return { ok: false, error: '記録が存在しません' }
+
+  const [photoCount] = await db
+    .select({ value: count() })
+    .from(recordPhotos)
+    .where(eq(recordPhotos.recordId, recordId))
+  const remainingCount = MAX_PHOTO_COUNT - (photoCount?.value ?? 0)
+  if (photos.length > remainingCount) {
+    return {
+      ok: false,
+      error: `写真は ${MAX_PHOTO_COUNT} 枚までです．この記録にはあと ${Math.max(remainingCount, 0)} 枚追加できます`,
+    }
+  }
+
+  const firstSortOrder = await findNextPhotoSortOrder({ db, recordId })
+  const uploadedPhotos = await uploadPhotos({ recordId, photos })
+  const photoRows = createPhotoRows({ recordId, photos: uploadedPhotos, firstSortOrder })
+
+  try {
+    await runInBatch({
+      db,
+      queries: [
+        ...(photoRows.length > 0 ? [db.insert(recordPhotos).values([...photoRows])] : []),
+        // 写真の追加も記録の更新として扱い，更新日時を進める
+        db.update(records).set({ updatedAt: new Date() }).where(eq(records.id, recordId)),
+      ],
+    })
+  } catch (error) {
+    await deletePhotosQuietly(uploadedPhotos.map(({ objectKey }) => objectKey))
+    throw error
+  }
   return { ok: true, recordId }
 }
 

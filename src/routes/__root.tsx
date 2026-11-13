@@ -11,6 +11,7 @@ import { PageLayout } from '@/components/layouts/PageLayout'
 import { NotFoundMessage } from '@/components/ui/NotFoundMessage'
 import { AdminShortcuts } from '@/features/admin-shortcuts'
 import { createOgpMeta } from '@/integrations/ogp/createOgpMeta'
+import { SERVICE_WORKER_REGISTRATION_SCRIPT } from '@/integrations/pwa/serviceWorker'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -32,6 +33,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
       },
+      {
+        name: 'theme-color',
+        content: '#ffffff',
+      },
       // 個々のページで上書きしない限り，サイト全体の OGP を使う
       ...createOgpMeta({
         title: SITE_NAME,
@@ -51,7 +56,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         type: 'image/svg+xml',
         href: '/favicon.svg',
       },
+      {
+        rel: 'manifest',
+        href: '/manifest.webmanifest',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/icon-192.png',
+      },
     ],
+    scripts: [{ children: SERVICE_WORKER_REGISTRATION_SCRIPT }],
   }),
   shellComponent: RootDocument,
   notFoundComponent: NotFoundPage,

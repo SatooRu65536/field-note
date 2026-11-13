@@ -37,6 +37,10 @@ export interface RecordPayload {
   readonly removedPhotoIds: readonly string[]
 }
 
+type PhotosParseResult =
+  | { readonly ok: true; readonly value: readonly File[] }
+  | { readonly ok: false; readonly error: string }
+
 export type RecordPayloadParseResult =
   | { readonly ok: true; readonly value: RecordPayload }
   | { readonly ok: false; readonly error: string }
@@ -183,6 +187,18 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
     return { ok: false, error: fields.error.issues[0]?.message ?? '入力内容が不正です' }
   }
 
+  const photos = parsePhotos(formData)
+  if (!photos.ok) return photos
+
+  return { ok: true, value: { ...fields.data, photos: photos.value } }
+}
+
+/**
+ * FormData の写真を検証する
+ * @param formData 写真を photos の項目に持つ FormData
+ * @returns 写真．検証に失敗した場合は最初のエラーメッセージ
+ */
+function parsePhotos(formData: FormData): PhotosParseResult {
   // ファイルを選択していない input からは空の File が送られるため除外する
   const files = formData
     .getAll('photos')
@@ -191,6 +207,42 @@ export function parseRecordFormData(formData: FormData): RecordPayloadParseResul
   if (!photos.success) {
     return { ok: false, error: photos.error.issues[0]?.message ?? '写真が不正です' }
   }
+  return { ok: true, value: photos.data }
+}
 
-  return { ok: true, value: { ...fields.data, photos: photos.data } }
+export interface RecordPhotosPayload {
+  readonly recordId: string
+  readonly photos: readonly File[]
+}
+
+export type RecordPhotosPayloadParseResult =
+  | { readonly ok: true; readonly value: RecordPhotosPayload }
+  | { readonly ok: false; readonly error: string }
+
+/**
+ * 登録済みの記録に写真を追加する内容を，サーバー関数に送る FormData に変換する
+ * @param payload 写真を追加する記録と写真
+ * @returns FormData
+ */
+export function createRecordPhotosFormData(payload: RecordPhotosPayload): FormData {
+  const formData = new FormData()
+  formData.set('recordId', payload.recordId)
+  payload.photos.forEach((photo) => formData.append('photos', photo))
+  return formData
+}
+
+/**
+ * サーバー関数が受け取った FormData を検証し，記録に写真を追加する内容に変換する
+ * @param formData createRecordPhotosFormData で作成した FormData
+ * @returns 写真を追加する記録と写真．検証に失敗した場合は最初のエラーメッセージ
+ */
+export function parseRecordPhotosFormData(formData: FormData): RecordPhotosPayloadParseResult {
+  const recordId = getOptionalString({ formData, key: 'recordId' }) ?? ''
+  if (recordId === '') return { ok: false, error: '写真を追加する記録が指定されていません' }
+
+  const photos = parsePhotos(formData)
+  if (!photos.ok) return photos
+  if (photos.value.length === 0) return { ok: false, error: '追加する写真がありません' }
+
+  return { ok: true, value: { recordId, photos: photos.value } }
 }
