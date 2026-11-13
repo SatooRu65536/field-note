@@ -17,6 +17,7 @@ import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 import { Route as AdminCategoriesIndexRouteImport } from './routes/admin/categories/index'
 import { Route as AdminRecordsIndexRouteImport } from './routes/admin/records/index'
 import { Route as AdminRecordsNewRouteImport } from './routes/admin/records/new'
+import { Route as AdminShareIndexRouteImport } from './routes/admin/share/index'
 import { Route as AdminRecordsRecordIdEditRouteImport } from './routes/admin/records/$recordId/edit'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +60,11 @@ const AdminRecordsNewRoute = AdminRecordsNewRouteImport.update({
   path: '/records/new',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminShareIndexRoute = AdminShareIndexRouteImport.update({
+  id: '/share/',
+  path: '/share/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminRecordsRecordIdEditRoute =
   AdminRecordsRecordIdEditRouteImport.update({
     id: '/records/$recordId/edit',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/admin/records/new': typeof AdminRecordsNewRoute
   '/admin/categories/': typeof AdminCategoriesIndexRoute
   '/admin/records/': typeof AdminRecordsIndexRoute
+  '/admin/share/': typeof AdminShareIndexRoute
   '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/admin/records/new': typeof AdminRecordsNewRoute
   '/admin/categories': typeof AdminCategoriesIndexRoute
   '/admin/records': typeof AdminRecordsIndexRoute
+  '/admin/share': typeof AdminShareIndexRoute
   '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/admin/records/new': typeof AdminRecordsNewRoute
   '/admin/categories/': typeof AdminCategoriesIndexRoute
   '/admin/records/': typeof AdminRecordsIndexRoute
+  '/admin/share/': typeof AdminShareIndexRoute
   '/admin/records/$recordId/edit': typeof AdminRecordsRecordIdEditRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/admin/records/new'
     | '/admin/categories/'
     | '/admin/records/'
+    | '/admin/share/'
     | '/admin/records/$recordId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/admin/records/new'
     | '/admin/categories'
     | '/admin/records'
+    | '/admin/share'
     | '/admin/records/$recordId/edit'
   id:
     | '__root__'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/admin/records/new'
     | '/admin/categories/'
     | '/admin/records/'
+    | '/admin/share/'
     | '/admin/records/$recordId/edit'
   fileRoutesById: FileRoutesById
 }
@@ -199,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRecordsNewRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/share/': {
+      id: '/admin/share/'
+      path: '/share'
+      fullPath: '/admin/share/'
+      preLoaderRoute: typeof AdminShareIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/records/$recordId/edit': {
       id: '/admin/records/$recordId/edit'
       path: '/records/$recordId/edit'
@@ -214,6 +233,7 @@ interface AdminRouteRouteChildren {
   AdminRecordsNewRoute: typeof AdminRecordsNewRoute
   AdminCategoriesIndexRoute: typeof AdminCategoriesIndexRoute
   AdminRecordsIndexRoute: typeof AdminRecordsIndexRoute
+  AdminShareIndexRoute: typeof AdminShareIndexRoute
   AdminRecordsRecordIdEditRoute: typeof AdminRecordsRecordIdEditRoute
 }
 
@@ -222,6 +242,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminRecordsNewRoute: AdminRecordsNewRoute,
   AdminCategoriesIndexRoute: AdminCategoriesIndexRoute,
   AdminRecordsIndexRoute: AdminRecordsIndexRoute,
+  AdminShareIndexRoute: AdminShareIndexRoute,
   AdminRecordsRecordIdEditRoute: AdminRecordsRecordIdEditRoute,
 }
 
